@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useForm } from "react-hook-form";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,16 @@ const ProfilePage = () => {
     { type: 'Download report', date: '10 maggio 2025, 11:05', device: 'Firefox, Windows' },
     { type: 'Cambio password', date: '5 maggio 2025, 16:30', device: 'Chrome, Android' }
   ];
+
+  // Create form instance for notifications tab
+  const notificationsForm = useForm({
+    defaultValues: {
+      "email-alerts": true,
+      "push-notifications": true,
+      "monthly-report": true,
+      "anomaly-detection": true
+    }
+  });
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -154,11 +165,12 @@ const ProfilePage = () => {
               <CardTitle>Preferenze di notifica</CardTitle>
             </CardHeader>
             <CardContent>
-              <Form>
+              <Form {...notificationsForm}>
                 <div className="space-y-4">
                   <FormField
                     name="email-alerts"
-                    render={() => (
+                    control={notificationsForm.control}
+                    render={({ field }) => (
                       <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Avvisi via email</FormLabel>
@@ -167,14 +179,18 @@ const ProfilePage = () => {
                           </FormDescription>
                         </div>
                         <FormControl>
-                          <Switch defaultChecked />
+                          <Switch 
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
                   />
                   <FormField
                     name="push-notifications"
-                    render={() => (
+                    control={notificationsForm.control}
+                    render={({ field }) => (
                       <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Notifiche push</FormLabel>
@@ -183,14 +199,18 @@ const ProfilePage = () => {
                           </FormDescription>
                         </div>
                         <FormControl>
-                          <Switch defaultChecked />
+                          <Switch 
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
                   />
                   <FormField
                     name="monthly-report"
-                    render={() => (
+                    control={notificationsForm.control}
+                    render={({ field }) => (
                       <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Report mensile</FormLabel>
@@ -199,14 +219,18 @@ const ProfilePage = () => {
                           </FormDescription>
                         </div>
                         <FormControl>
-                          <Switch defaultChecked />
+                          <Switch 
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
                   />
                   <FormField
                     name="anomaly-detection"
-                    render={() => (
+                    control={notificationsForm.control}
+                    render={({ field }) => (
                       <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Rilevamento anomalie</FormLabel>
@@ -215,7 +239,10 @@ const ProfilePage = () => {
                           </FormDescription>
                         </div>
                         <FormControl>
-                          <Switch defaultChecked />
+                          <Switch 
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
