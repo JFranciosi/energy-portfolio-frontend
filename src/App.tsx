@@ -13,6 +13,10 @@ import ServicesPage from "./pages/ServicesPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import Layout from "./components/layout/Layout";
+import EnergyPortfolioPage from "./pages/energy-portfolio/EnergyPortfolioPage";
+import UploadBillsPage from "./pages/energy-portfolio/UploadBillsPage";
+import DashboardPage from "./pages/energy-portfolio/DashboardPage";
+import FuturesPage from "./pages/energy-portfolio/FuturesPage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +34,10 @@ const App = () => (
             <Route path="/services" element={<Layout><ServicesPage /></Layout>} />
             <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/energy-portfolio" element={<Layout><EnergyPortfolioPage /></Layout>} />
+            <Route path="/energy-portfolio/upload" element={<Layout><UploadBillsPage /></Layout>} />
+            <Route path="/energy-portfolio/dashboard" element={<Layout><DashboardPage /></Layout>} />
+            <Route path="/energy-portfolio/futures" element={<Layout><FuturesPage /></Layout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
