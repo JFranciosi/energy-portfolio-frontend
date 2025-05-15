@@ -32,13 +32,13 @@ const ServicesPage = () => {
     },
     {
       title: 'Gestione Impianti',
-      description: 'Gestisci centralmente tutti gli impianti energetici della tua azienda da un'unica piattaforma.',
+      description: "Gestisci centralmente tutti gli impianti energetici della tua azienda da un'unica piattaforma.",
       icon: Settings,
       features: ['Controllo centralizzato', 'Programmazione automatica', 'Manutenzione preventiva']
     },
     {
       title: 'Consulenza Energetica',
-      description: 'Ricevi consulenza specializzata dai nostri esperti per migliorare l'efficienza energetica della tua azienda.',
+      description: "Ricevi consulenza specializzata dai nostri esperti per migliorare l'efficienza energetica della tua azienda.",
       icon: Zap,
       features: ['Audit energetici', 'Piano di efficientamento', 'Supporto continuo']
     }
