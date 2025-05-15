@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PortfolioCard, PortfolioCardAction } from '@/components/energy-portfolio/PortfolioCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, ArrowRight, Upload, LineChart, TrendingUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const EnergyPortfolioPage = () => {
   const navigate = useNavigate();

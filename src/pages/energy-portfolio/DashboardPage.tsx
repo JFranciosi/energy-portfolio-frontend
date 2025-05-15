@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
 import { DataFilters } from '@/components/energy-portfolio/DataFilters';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
 import { Card } from '@/components/ui/card';
-import { AreaChart, BarChart, LineChart, PieChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Line, Bar } from 'recharts';
+import { AreaChart, BarChart, LineChart, PieChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Line, Bar, Pie, Cell } from 'recharts';
+import { cn } from '@/lib/utils';
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState('consumption');
