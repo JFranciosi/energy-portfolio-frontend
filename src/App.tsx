@@ -17,6 +17,8 @@ import EnergyPortfolioPage from "./pages/energy-portfolio/EnergyPortfolioPage";
 import UploadBillsPage from "./pages/energy-portfolio/UploadBillsPage";
 import DashboardPage from "./pages/energy-portfolio/DashboardPage";
 import FuturesPage from "./pages/energy-portfolio/FuturesPage";
+import CostsPage from "./pages/energy-portfolio/CostsPage";
+import CreateUserPage from "./pages/energy-portfolio/CreateUserPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/energy-portfolio/upload" element={<Layout><UploadBillsPage /></Layout>} />
             <Route path="/energy-portfolio/dashboard" element={<Layout><DashboardPage /></Layout>} />
             <Route path="/energy-portfolio/futures" element={<Layout><FuturesPage /></Layout>} />
+            <Route path="/energy-portfolio/costs" element={<Layout><CostsPage /></Layout>} />
+            <Route path="/energy-portfolio/create-user" element={<Layout><CreateUserPage /></Layout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

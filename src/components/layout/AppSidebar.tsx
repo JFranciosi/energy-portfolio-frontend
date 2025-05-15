@@ -16,7 +16,7 @@ import {
   SidebarRail
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
-import { Home, BarChart, Mail, Briefcase, User, LogIn } from 'lucide-react';
+import { Home, BarChart, Mail, Briefcase, User, LogIn, DollarSign, UserPlus } from 'lucide-react';
 
 export const AppSidebar = () => {
   const location = useLocation();
@@ -28,6 +28,16 @@ export const AppSidebar = () => {
     { title: 'Servizi', path: '/services', icon: Briefcase },
     { title: 'Contatti', path: '/contact', icon: Mail },
     { title: 'Profilo', path: '/profile', icon: User },
+  ];
+
+  // Energy portfolio items
+  const portfolioItems = [
+    { title: 'Overview', path: '/energy-portfolio', icon: BarChart },
+    { title: 'Dashboard', path: '/energy-portfolio/dashboard', icon: BarChart },
+    { title: 'Costi', path: '/energy-portfolio/costs', icon: DollarSign },
+    { title: 'Upload Bollette', path: '/energy-portfolio/upload', icon: Briefcase },
+    { title: 'Futures', path: '/energy-portfolio/futures', icon: BarChart },
+    { title: 'Crea Utente', path: '/energy-portfolio/create-user', icon: UserPlus },
   ];
 
   return (
@@ -45,6 +55,29 @@ export const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive(item.path)}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.path}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Energy Portfolio Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Energy Portfolio</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {portfolioItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton 
                     asChild 
