@@ -19,6 +19,11 @@ import DashboardPage from "./pages/energy-portfolio/DashboardPage";
 import FuturesPage from "./pages/energy-portfolio/FuturesPage";
 import CostsPage from "./pages/energy-portfolio/CostsPage";
 import CreateUserPage from "./pages/energy-portfolio/CreateUserPage";
+import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
+import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
+import CookiePolicyPage from "./pages/legal/CookiePolicyPage";
+import GdprRequestPage from "./pages/legal/GdprRequestPage";
+import { CookieBanner } from "./components/legal/CookieBanner";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +33,7 @@ const App = () => (
       <SidebarProvider>
         <Toaster />
         <Sonner />
+        <CookieBanner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Layout><HomePage /></Layout>} />
@@ -42,6 +48,13 @@ const App = () => (
             <Route path="/energy-portfolio/futures" element={<Layout><FuturesPage /></Layout>} />
             <Route path="/energy-portfolio/costs" element={<Layout><CostsPage /></Layout>} />
             <Route path="/energy-portfolio/create-user" element={<Layout><CreateUserPage /></Layout>} />
+            
+            {/* Legal Routes */}
+            <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+            <Route path="/terms-conditions" element={<Layout><TermsConditionsPage /></Layout>} />
+            <Route path="/cookie-policy" element={<Layout><CookiePolicyPage /></Layout>} />
+            <Route path="/gdpr-request" element={<Layout><GdprRequestPage /></Layout>} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
