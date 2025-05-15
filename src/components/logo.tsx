@@ -5,16 +5,20 @@ import { cn } from "@/lib/utils";
 interface LogoProps {
   className?: string;
   collapsed?: boolean;
+  variant?: 'default' | 'light';
 }
 
-export function Logo({ className, collapsed = false }: LogoProps) {
+export function Logo({ className, collapsed = false, variant = 'default' }: LogoProps) {
+  const logoColor = variant === 'light' ? 'text-white bg-white/20' : 'text-accent-foreground bg-accent';
+  const textColor = variant === 'light' ? 'text-white' : 'text-sidebar-foreground';
+  
   return (
     <div className={cn("flex items-center", className)}>
-      <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-accent-foreground font-bold">
+      <div className={cn("w-8 h-8 rounded-md flex items-center justify-center font-bold", logoColor)}>
         EM
       </div>
       {!collapsed && (
-        <span className="ml-2 text-sidebar-foreground font-semibold text-lg">
+        <span className={cn("ml-2 font-semibold text-lg", textColor)}>
           EnergyMon
         </span>
       )}
