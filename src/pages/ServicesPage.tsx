@@ -97,32 +97,6 @@ const ServicesPage = () => {
   ];
 
   return (
-    <div className="space-y-8 ml-5"> {/* Added ml-5 for 5px left margin */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Mies - EnergyPortfolio</h1>
-            <p className="text-xl text-muted-foreground">I Nostri Servizi</p>
-          </div>
-          <div className="h-16 w-40 relative">
-            <img 
-              src="/lovable-uploads/f33dc69c-12e2-4b05-a3eb-b3073381d202.png" 
-              alt="Mies Logo" 
-              className="object-contain w-full h-full"
-            />
-          </div>
-        </div>
-        <Separator className="my-6" />
-      </div>
-
-      {/* Breadcrumb */}
-      <nav className="flex mb-6 text-sm">
-        <ol className="flex items-center space-x-2">
-          <li><a href="/" className="text-primary hover:underline">Home</a></li>
-          <li className="text-muted-foreground">/</li>
-          <li className="text-muted-foreground">Servizi</li>
-        </ol>
-      </nav>
       
       {/* Services Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
