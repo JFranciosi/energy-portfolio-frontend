@@ -12,34 +12,24 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarTrigger,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem
+  SidebarTrigger
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
-import { Home, Mail, Briefcase, User, LogIn, FileText, TrendingUp, BarChart3 } from 'lucide-react';
+import { Home, Mail, Briefcase, User, LogIn, BarChart3, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export const AppSidebar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const isActive = (path: string) => location.pathname === path;
-  const isSubActive = (paths: string[]) => paths.some(path => location.pathname.includes(path));
 
   const menuItems = [
     { title: 'Home', path: '/', icon: Home },
     { title: 'Servizi', path: '/services', icon: Briefcase },
     { title: 'Contatti', path: '/contact', icon: Mail },
-    { title: 'Profilo', path: '/profile', icon: User },
-  ];
-
-  // Energy portfolio items
-  const portfolioItems = [
-    { title: 'Overview', path: '/energy-portfolio', icon: BarChart3 },
-    { title: 'Bollette', path: '/energy-portfolio/upload', icon: FileText },
-    { title: 'Futures', path: '/energy-portfolio/futures', icon: TrendingUp },
+    { title: 'Energy Portfolio', path: '/energy-portfolio', icon: BarChart3 },
     { title: 'Crea Utente', path: '/energy-portfolio/create-user', icon: User },
+    { title: 'Profilo', path: '/profile', icon: User },
   ];
 
   return (
@@ -87,33 +77,6 @@ export const AppSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              {/* Energy Portfolio Section with Submenu */}
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  isActive={isSubActive(['/energy-portfolio'])}
-                  tooltip="Energy Portfolio"
-                >
-                  <BarChart3 />
-                  <span>Energy Portfolio</span>
-                </SidebarMenuButton>
-                
-                <SidebarMenuSub>
-                  {portfolioItems.map((item) => (
-                    <SidebarMenuSubItem key={item.path}>
-                      <SidebarMenuSubButton 
-                        asChild 
-                        isActive={isActive(item.path)}
-                      >
-                        <Link to={item.path}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
