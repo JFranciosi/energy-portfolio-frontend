@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,7 +97,7 @@ const ServicesPage = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 ml-5"> {/* Added ml-5 for 5px left margin */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
