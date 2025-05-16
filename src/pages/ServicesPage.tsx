@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Link } from 'react-router-dom';
 
 const ServicesPage = () => {
   const services = [
@@ -101,7 +101,7 @@ const ServicesPage = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className={cn("space-y-8", !isMobile && "ml-5")}>
+    <div className={cn("space-y-8 mt-5", !isMobile && "ml-5")}>
       {/* Services Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.map((service) => (
@@ -176,12 +176,9 @@ const ServicesPage = () => {
             <p className="mb-6 max-w-2xl mx-auto">
               I nostri esperti sono a tua disposizione per aiutarti a trovare la soluzione più adatta alle tue esigenze energetiche.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button className="bg-white text-primary hover:bg-white/90">
-                Contattaci ora
-              </Button>
-              <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                Scopri di più
+            <div className="flex flex-wrap justify-center">
+              <Button className="bg-white text-primary hover:bg-white/90" asChild>
+                <Link to="/contact">Contattaci ora</Link>
               </Button>
             </div>
           </CardContent>
