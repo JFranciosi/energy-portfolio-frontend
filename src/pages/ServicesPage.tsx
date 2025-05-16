@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,20 +126,24 @@ const ServicesPage = () => {
         ))}
       </div>
 
-      {/* FAQ Section */}
+      {/* FAQ Section - Improved responsive layout */}
       <div className="mt-16 space-y-6">
         <h2 className="text-2xl font-bold text-primary">Domande Frequenti</h2>
         <Tabs defaultValue="diagnosi" className="w-full">
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+          <TabsList className="flex flex-wrap mb-6 overflow-x-auto">
             {services.map(service => (
-              <TabsTrigger key={service.id} value={service.id} className="text-xs md:text-sm">
+              <TabsTrigger 
+                key={service.id} 
+                value={service.id} 
+                className="text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
                 {service.title.split(' ')[0]}
               </TabsTrigger>
             ))}
           </TabsList>
           
           {services.map(service => (
-            <TabsContent key={service.id} value={service.id} className="p-4 border rounded-md mt-2">
+            <TabsContent key={service.id} value={service.id} className="p-4 border rounded-md mt-4">
               <h3 className="font-bold text-lg mb-4">FAQ - {service.title}</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
