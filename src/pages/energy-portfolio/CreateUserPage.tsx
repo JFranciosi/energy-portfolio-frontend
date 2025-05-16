@@ -154,19 +154,7 @@ const CreateUserPage = () => {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       {/* Breadcrumb */}
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/energy-portfolio">Energy Portfolio</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbPage>Crea Nuovo Utente</BreadcrumbPage>
-        </BreadcrumbList>
-      </Breadcrumb>
+     
 
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Card className="w-full max-w-md shadow-lg border-t-4 border-t-primary">
