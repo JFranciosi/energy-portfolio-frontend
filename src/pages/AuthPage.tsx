@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
-import { Logo } from '@/components/logo';
 import { Eye, EyeOff } from 'lucide-react';
 
 const AuthPage = () => {
@@ -25,14 +24,9 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-400 p-4">
+    <div className="w-full p-4 flex items-center justify-center">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link to="/" className="inline-block">
-            <Logo className="text-white mx-auto" variant="light" />
-          </Link>
-          <h1 className="mt-6 text-2xl font-bold text-white">Accedi al tuo account</h1>
-        </div>
+        <h1 className="mb-6 text-2xl font-bold text-center">Accedi al tuo account</h1>
         
         <Card className="shadow-lg animate-fade-in">
           <Tabs defaultValue="login" className="w-full">
@@ -160,7 +154,7 @@ const AuthPage = () => {
         </Card>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-white hover:underline">
+          <Link to="/" className="text-primary hover:underline">
             Torna alla Home Page
           </Link>
         </div>
