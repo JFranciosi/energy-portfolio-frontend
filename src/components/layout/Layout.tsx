@@ -49,8 +49,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AppSidebar />
       <SidebarInset className="flex flex-col pl-0">
         <div className="flex-grow w-full max-w-full overflow-x-hidden">
-          <div className="container mx-auto px-3 py-6">
-            <Breadcrumb className="mb-4">
+          <div className="w-full px-2 py-4">
+            <Breadcrumb className="mb-4 pl-2">
               <BreadcrumbList>
                 {breadcrumbItems.map((item, index) => (
                   <React.Fragment key={item.path}>

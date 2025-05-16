@@ -19,9 +19,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import { Home, Mail, Briefcase, User, LogIn, FileText, TrendingUp, BarChart3 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const AppSidebar = () => {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const isActive = (path: string) => location.pathname === path;
   const isSubActive = (paths: string[]) => paths.some(path => location.pathname.includes(path));
 
@@ -36,18 +38,16 @@ export const AppSidebar = () => {
   const portfolioItems = [
     { title: 'Overview', path: '/energy-portfolio', icon: BarChart3 },
     { title: 'Bollette', path: '/energy-portfolio/upload', icon: FileText },
-    { title: 'Dashboard', path: '/energy-portfolio/dashboard', icon: BarChart3 },
-    { title: 'Costi', path: '/energy-portfolio/costs', icon: FileText },
     { title: 'Futures', path: '/energy-portfolio/futures', icon: TrendingUp },
     { title: 'Crea Utente', path: '/energy-portfolio/create-user', icon: User },
   ];
 
   return (
-    <Sidebar collapsible="none">
+    <Sidebar collapsible={isMobile ? "offcanvas" : "none"}>
       <SidebarHeader>
         <div className="flex items-center justify-between p-2">
           <Logo />
-          <SidebarTrigger className="md:hidden" />
+          {isMobile && <SidebarTrigger className="md:block lg:hidden" />}
         </div>
       </SidebarHeader>
       <SidebarContent>
