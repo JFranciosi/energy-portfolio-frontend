@@ -35,14 +35,14 @@
 
     --radius: 0.5rem;
     
-    /* Sidebar colors */
+    /* Sidebar colors with improved contrast */
     --sidebar-background: 210 73% 23%; /* #1A365D */
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 210 73% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 33% 28%;
+    --sidebar-accent: 210 33% 38%; /* Improved contrast */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 33% 28%;
+    --sidebar-border: 210 33% 38%; /* Improved contrast */
     --sidebar-ring: 173 61% 56%; /* #4ECDC4 */
   }
 
@@ -75,13 +75,14 @@
     --input: 210 25% 26%;
     --ring: 210 33% 60%;
 
+    /* Dark mode sidebar with improved contrast */
     --sidebar-background: 210 73% 13%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 210 73% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 33% 28%;
+    --sidebar-accent: 210 33% 38%; /* Improved contrast */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 33% 28%;
+    --sidebar-border: 210 33% 38%; /* Improved contrast */
     --sidebar-ring: 173 61% 56%;
   }
 }

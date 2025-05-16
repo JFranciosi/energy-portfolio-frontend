@@ -15,11 +15,11 @@ export function Logo({ className, collapsed = false, variant = 'default' }: Logo
   return (
     <div className={cn("flex items-center", className)}>
       <div className={cn("w-8 h-8 rounded-md flex items-center justify-center font-bold", logoColor)}>
-        EM
+        M
       </div>
       {!collapsed && (
         <span className={cn("ml-2 font-semibold text-lg", textColor)}>
-          EnergyMon
+          Mies
         </span>
       )}
     </div>
