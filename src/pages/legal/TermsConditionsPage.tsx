@@ -242,7 +242,7 @@ const TermsConditionsPage = () => {
         </div>
       </div>
       
-      <LegalFooter />
+
     </div>
   );
 };

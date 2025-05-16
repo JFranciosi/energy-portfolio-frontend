@@ -252,7 +252,7 @@ const GdprRequestPage = () => {
         </div>
       </div>
       
-      <LegalFooter />
+
     </div>
   );
 };
