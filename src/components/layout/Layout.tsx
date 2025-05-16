@@ -49,16 +49,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AppSidebar />
       <SidebarInset className="flex flex-col pl-0">
         <div className="flex-grow w-full max-w-full overflow-x-hidden">
-          <header className="border-b border-border py-3 px-6">
-            <div className="flex items-center">
-              <img 
-                src="/lovable-uploads/36f1d64c-e722-44ed-bdf0-46294ba78035.png" 
-                alt="Mies Icon" 
-                className="h-6 w-auto mr-2" 
-              />
-              <h1 className="text-lg font-medium">Mies - EnergyPortfolio</h1>
-            </div>
-          </header>
           <div className="container mx-auto px-3 py-6">
             <Breadcrumb className="mb-4">
               <BreadcrumbList>

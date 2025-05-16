@@ -14,16 +14,12 @@ export function Logo({ className, collapsed = false, variant = 'default' }: Logo
   
   return (
     <div className={cn("flex items-center", className)}>
-      <div className="h-8 flex items-center">
-        <img 
-          src="/lovable-uploads/17334720-efab-4229-b74d-449ed9fe1b14.png" 
-          alt="Mies Logo" 
-          className="h-full object-contain"
-        />
+      <div className={cn("w-8 h-8 rounded-md flex items-center justify-center font-bold", logoColor)}>
+        M
       </div>
       {!collapsed && (
         <span className={cn("ml-2 font-semibold text-lg", textColor)}>
-          {/* Logo image already includes the text "Mies" */}
+          Mies
         </span>
       )}
     </div>
