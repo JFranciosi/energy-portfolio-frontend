@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,7 @@ import { Activity, Settings, Monitor, FileText, BarChart2, Award, Check } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ServicesPage = () => {
   const services = [
@@ -95,9 +97,11 @@ const ServicesPage = () => {
       ]
     }
   ];
+  
+  const isMobile = useIsMobile();
 
   return (
-    <div className="space-y-8 ml-5">
+    <div className={cn("space-y-8", !isMobile && "ml-5")}>
       {/* Services Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.map((service) => (
