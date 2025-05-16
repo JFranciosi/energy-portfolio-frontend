@@ -43,7 +43,7 @@ export const AppSidebar = () => {
   ];
 
   return (
-    <Sidebar collapsible={isMobile ? "offcanvas" : "none"}>
+    <Sidebar collapsible={isMobile ? "offcanvas" : "none"} className={!isMobile ? "fixed left-0 top-0 h-screen z-30" : ""}>
       <SidebarHeader>
         <div className="flex items-center justify-between p-2">
           <Logo />
@@ -51,7 +51,7 @@ export const AppSidebar = () => {
         </div>
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="overflow-y-auto">
         {/* Login Button - Now positioned at the top */}
         <SidebarMenu className="mb-4">
           <SidebarMenuItem>

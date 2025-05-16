@@ -73,6 +73,7 @@ export function Sidebar({ className }: SidebarProps) {
       className={cn(
         "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all",
         collapsed ? "w-16" : "w-64",
+        !isMobile && "fixed left-0 top-0 z-30 overflow-y-auto",
         className
       )}
     >
