@@ -1,134 +1,211 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, BarChart3, Activity, Zap, Settings, Lightbulb, LineChart } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Activity, Settings, Monitor, FileText, BarChart2, Award, Check } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 const ServicesPage = () => {
   const services = [
     {
-      title: 'Monitoraggio Energetico',
-      description: 'Monitora in tempo reale i consumi energetici della tua azienda con dashboard personalizzabili e reportistica avanzata.',
-      icon: BarChart3,
-      features: ['Monitoraggio real-time', 'Dashboard personalizzabili', 'Reportistica automatica']
-    },
-    {
-      title: 'Analisi Predittiva',
-      description: 'Utilizza algoritmi di intelligenza artificiale per prevedere consumi futuri e identificare pattern di risparmio.',
-      icon: LineChart,
-      features: ['Algoritmi avanzati', 'Previsioni accurate', 'Identificazione pattern']
-    },
-    {
-      title: 'Ottimizzazione Consumi',
-      description: 'Ricevi suggerimenti personalizzati per ottimizzare i consumi energetici e ridurre i costi operativi.',
-      icon: Lightbulb,
-      features: ['Suggerimenti automatici', 'Analisi costi/benefici', 'Prioritizzazione interventi']
-    },
-    {
-      title: 'Rilevamento Anomalie',
-      description: 'Identifica rapidamente anomalie nei consumi per prevenire guasti e sprechi energetici.',
+      id: 'diagnosi',
+      title: 'DIAGNOSI ENERGETICA',
+      description: 'Mappatura completa dei consumi energetici aziendali',
       icon: Activity,
-      features: ['Notifiche in tempo reale', 'Diagnosi precoce', 'Prevenzione guasti']
+      features: [
+        'Mappatura completa dei consumi energetici aziendali',
+        'Individuazione e quantificazione delle opportunità di risparmio',
+        'Conformità alla Direttiva Europea 2012/27/UE (D.lgs 102/2014)',
+        'Strumenti: soluzioni ad alta efficienza, ottimizzazione gestionale, monitoraggio consumi, ISO 50001'
+      ]
     },
     {
-      title: 'Gestione Impianti',
-      description: "Gestisci centralmente tutti gli impianti energetici della tua azienda da un'unica piattaforma.",
+      id: 'engineering',
+      title: 'ENGINEERING',
+      description: 'Supporto alla realizzazione di interventi di efficienza energetica',
       icon: Settings,
-      features: ['Controllo centralizzato', 'Programmazione automatica', 'Manutenzione preventiva']
+      features: [
+        'Supporto alla realizzazione di interventi di efficienza energetica',
+        'Competenze specifiche in refrigerazione industriale (ottimizzazione, free cooling)',
+        'Sistemi aria compressa (riduzione perdite, parametri ottimali)',
+        'Ottimizzazione centrali termiche (coibentazione, recupero termico)',
+        'Analisi processo produttivo con benchmark di mercato'
+      ]
     },
     {
-      title: 'Consulenza Energetica',
-      description: "Ricevi consulenza specializzata dai nostri esperti per migliorare l'efficienza energetica della tua azienda.",
-      icon: Zap,
-      features: ['Audit energetici', 'Piano di efficientamento', 'Supporto continuo']
-    }
-  ];
-
-  const testimonials = [
-    {
-      quote: "Grazie a EnergyMon abbiamo ridotto i costi energetici del 27% in soli sei mesi, con un significativo impatto sul nostro bilancio.",
-      author: "Marco Bianchi",
-      role: "Direttore Operativo, TechCorp S.p.A."
+      id: 'oneview',
+      title: 'ONEVIEW',
+      description: 'Sistema avanzato di Energy Management',
+      icon: Monitor,
+      features: [
+        'Sistema avanzato di Energy Management',
+        'Monitoraggio dinamico e personalizzato dei consumi',
+        'Integrazione con protocolli moderni (LoRa, OPC-UA, ModBus)',
+        'Archivio dati locale e cloud',
+        'Confronto prestazionale tra macchinari e simulazione nuove installazioni'
+      ]
     },
     {
-      quote: "Il sistema di monitoraggio in tempo reale ci ha permesso di identificare sprechi che non avremmo mai notato. Un investimento che si è ripagato in pochissimo tempo.",
-      author: "Giulia Ricci",
-      role: "Sustainability Manager, GreenFuture"
+      id: 'epc',
+      title: 'ENERGY PERFORMANCE CONTRACT',
+      description: 'Garanzia sui risparmi energetici attesi',
+      icon: FileText,
+      features: [
+        'Garanzia sui risparmi energetici attesi',
+        'Possibilità di finanziamento degli interventi',
+        'Contratti personalizzati secondo norma 11352',
+        'Ripagamento attraverso i flussi di cassa generati dall\'efficienza'
+      ]
     },
     {
-      quote: "La facilità d'uso della piattaforma è impressionante. Anche i membri del team senza competenze tecniche riescono a utilizzarla efficacemente.",
-      author: "Roberto Esposito",
-      role: "CTO, Innovatech"
+      id: 'portfolio',
+      title: 'ENERGY PORTFOLIO',
+      description: 'Ottimizzazione dei contratti di acquisto energia',
+      icon: BarChart2,
+      features: [
+        'Ottimizzazione dei contratti di acquisto energia',
+        'Analisi preliminare gratuita del profilo consumi',
+        'Verifica mensile delle fatture energetiche',
+        'Aggiornamenti su normative e mercato energetico'
+      ]
+    },
+    {
+      id: 'iso',
+      title: 'ISO 50001',
+      description: 'Implementazione Sistema di Gestione Energia',
+      icon: Award,
+      features: [
+        'Implementazione Sistema di Gestione Energia',
+        'Integrazione con altri sistemi (ISO 14001, ISO 9001)',
+        'Miglioramento continuo dell\'efficienza energetica',
+        'Valorizzazione dell\'immagine aziendale sostenibile'
+      ]
+    },
+    {
+      id: 'bianchi',
+      title: 'CERTIFICATI BIANCHI',
+      description: 'Contributo economico per interventi di efficienza',
+      icon: Check,
+      features: [
+        'Contributo economico per interventi di efficienza',
+        'Riduzione dei tempi di rientro degli investimenti',
+        'Incentivi erogati per 5 anni',
+        'Gestione completa delle pratiche tecniche e normative'
+      ]
     }
   ];
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-primary mb-2">I Nostri Servizi</h1>
-      <p className="text-lg text-muted-foreground mb-8">Soluzioni complete per l'efficienza energetica della tua azienda</p>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-primary">Mies - EnergyPortfolio</h1>
+            <p className="text-xl text-muted-foreground">I Nostri Servizi</p>
+          </div>
+          <div className="h-16 w-40 relative">
+            <img 
+              src="/lovable-uploads/f33dc69c-12e2-4b05-a3eb-b3073381d202.png" 
+              alt="Mies Logo" 
+              className="object-contain w-full h-full"
+            />
+          </div>
+        </div>
+        <Separator className="my-6" />
+      </div>
 
+      {/* Breadcrumb */}
+      <nav className="flex mb-6 text-sm">
+        <ol className="flex items-center space-x-2">
+          <li><a href="/" className="text-primary hover:underline">Home</a></li>
+          <li className="text-muted-foreground">/</li>
+          <li className="text-muted-foreground">Servizi</li>
+        </ol>
+      </nav>
+      
       {/* Services Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-        {services.map((service, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map((service) => (
+          <Card key={service.id} className="flex flex-col h-full border-l-4 border-l-primary hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <service.icon className="text-primary h-6 w-6" />
+              <div className="flex items-start justify-between">
+                <div className="bg-primary/10 p-2 rounded-lg mb-3">
+                  <service.icon className="h-6 w-6 text-primary" />
+                </div>
               </div>
-              <CardTitle className="text-xl">{service.title}</CardTitle>
-              <CardDescription>{service.description}</CardDescription>
+              <CardTitle className="text-xl font-bold text-primary">{service.title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow">
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+              <ul className="space-y-2 list-disc pl-5">
                 {service.features.map((feature, i) => (
-                  <li key={i}>{feature}</li>
+                  <li key={i} className="text-sm text-muted-foreground">{feature}</li>
                 ))}
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" className="w-full justify-start text-primary">
-                Scopri di più <ArrowRight className="ml-2 h-4 w-4" />
+              <Button variant="outline" className="w-full">
+                Maggiori informazioni
               </Button>
             </CardFooter>
           </Card>
         ))}
       </div>
 
-      {/* Testimonials */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-bold text-primary mb-8 text-center">Cosa Dicono i Nostri Clienti</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-muted border-none">
-              <CardContent className="pt-6">
-                <div className="text-xl font-serif text-muted-foreground italic mb-4">
-                  "{testimonial.quote}"
+      {/* FAQ Section */}
+      <div className="mt-16 space-y-6">
+        <h2 className="text-2xl font-bold text-primary">Domande Frequenti</h2>
+        <Tabs defaultValue="diagnosi" className="w-full">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+            {services.map(service => (
+              <TabsTrigger key={service.id} value={service.id} className="text-xs md:text-sm">
+                {service.title.split(' ')[0]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {services.map(service => (
+            <TabsContent key={service.id} value={service.id} className="p-4 border rounded-md mt-2">
+              <h3 className="font-bold text-lg mb-4">FAQ - {service.title}</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Quali sono i vantaggi principali di {service.title}?</h4>
+                  <p className="text-muted-foreground text-sm">
+                    {service.features[0]} Inoltre, forniamo supporto tecnico completo e consulenza personalizzata.
+                  </p>
                 </div>
-                <div>
-                  <p className="font-semibold">{testimonial.author}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Come posso richiedere questo servizio?</h4>
+                  <p className="text-muted-foreground text-sm">
+                    Puoi contattarci direttamente attraverso il form nella pagina contatti o chiamare il nostro numero dedicato.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </TabsContent>
           ))}
-        </div>
-      </section>
+        </Tabs>
+      </div>
 
       {/* CTA Section */}
-      <section className="bg-primary text-white rounded-lg p-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">Pronto a ottimizzare i tuoi consumi energetici?</h2>
-        <p className="text-lg mb-6 max-w-2xl mx-auto">
-          Richiedi una demo gratuita o un preventivo personalizzato per la tua azienda.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4">
-          <Button className="bg-white text-primary hover:bg-white/90">
-            Richiedi una Demo
-          </Button>
-          <Button variant="outline" className="border-white text-white hover:bg-white/10">
-            Preventivo Personalizzato
-          </Button>
-        </div>
-      </section>
+      <div className="mt-12">
+        <Card className="bg-primary text-white">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Richiedi una consulenza gratuita</h2>
+            <p className="mb-6 max-w-2xl mx-auto">
+              I nostri esperti sono a tua disposizione per aiutarti a trovare la soluzione più adatta alle tue esigenze energetiche.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button className="bg-white text-primary hover:bg-white/90">
+                Contattaci ora
+              </Button>
+              <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                Scopri di più
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -13,8 +13,8 @@ export function LegalFooter() {
           <div className="col-span-1 md:col-span-2">
             <h4 className="text-base font-medium text-primary mb-3">Informazioni Legali</h4>
             <p className="text-sm text-muted-foreground mb-3">
-              Energy Portfolio è un servizio di gestione energetica aziendale fornito da 
-              Energy Solutions S.p.A., P.IVA 12345678900, REA MI-1234567.
+              Mies - EnergyPortfolio è un servizio di gestione energetica aziendale fornito da 
+              Mies Energy Solutions S.p.A., P.IVA 12345678900, REA MI-1234567.
             </p>
             <p className="text-sm text-muted-foreground">
               Sede legale: Via Energia 123, 20123 Milano (MI), Italia
@@ -40,7 +40,7 @@ export function LegalFooter() {
             <h4 className="text-base font-medium text-primary mb-3">GDPR e Privacy</h4>
             <p className="text-sm text-muted-foreground mb-3">
               Responsabile Protezione Dati (DPO): <br />
-              <a href="mailto:dpo@energyportfolio.it" className="text-primary hover:underline">dpo@energyportfolio.it</a>
+              <a href="mailto:dpo@miesenergy.it" className="text-primary hover:underline">dpo@miesenergy.it</a>
             </p>
             <Link to="/gdpr-request" className="text-sm text-primary hover:underline">
               Esercita i tuoi diritti GDPR
@@ -52,7 +52,7 @@ export function LegalFooter() {
         
         <div className="flex flex-col sm:flex-row items-center justify-between">
           <p className="text-xs text-muted-foreground mb-2 sm:mb-0">
-            © {currentYear} Energy Solutions S.p.A. Tutti i diritti riservati.
+            © {currentYear} Mies Energy Solutions S.p.A. Tutti i diritti riservati.
           </p>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <Link to="/accessibility" className="hover:text-primary transition-colors">
