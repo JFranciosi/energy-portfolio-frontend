@@ -50,7 +50,25 @@ export const AppSidebar = () => {
           {isMobile && <SidebarTrigger className="md:block lg:hidden" />}
         </div>
       </SidebarHeader>
+      
       <SidebarContent>
+        {/* Login Button - Now positioned at the top */}
+        <SidebarMenu className="mb-4">
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              asChild 
+              isActive={isActive('/auth')}
+              tooltip="Accedi"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Link to="/auth">
+                <LogIn />
+                <span>Accedi</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -100,21 +118,9 @@ export const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              asChild 
-              isActive={isActive('/auth')}
-              tooltip="Accedi"
-            >
-              <Link to="/auth">
-                <LogIn />
-                <span>Accedi</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {/* Footer content if needed */}
       </SidebarFooter>
     </Sidebar>
   );

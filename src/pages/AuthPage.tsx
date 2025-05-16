@@ -1,16 +1,19 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/logo';
+import { Eye, EyeOff } from 'lucide-react';
 
 const AuthPage = () => {
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +29,7 @@ const AuthPage = () => {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link to="/" className="inline-block">
-            <Logo className="text-white mx-auto" />
+            <Logo className="text-white mx-auto" variant="light" />
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-white">Accedi al tuo account</h1>
         </div>
@@ -52,7 +55,23 @@ const AuthPage = () => {
                         Password dimenticata?
                       </Button>
                     </div>
-                    <Input id="password-login" placeholder="••••••••" type="password" required />
+                    <div className="relative">
+                      <Input 
+                        id="password-login" 
+                        placeholder="••••••••" 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                      />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon"
+                        className="absolute right-0 top-0 h-full aspect-square"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="remember" />
@@ -84,7 +103,23 @@ const AuthPage = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password-register">Password</Label>
-                    <Input id="password-register" placeholder="••••••••" type="password" required />
+                    <div className="relative">
+                      <Input 
+                        id="password-register" 
+                        placeholder="••••••••" 
+                        type={showRegisterPassword ? "text" : "password"} 
+                        required 
+                      />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon"
+                        className="absolute right-0 top-0 h-full aspect-square"
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      >
+                        {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="company">Azienda</Label>
@@ -93,7 +128,7 @@ const AuthPage = () => {
                   <div className="flex items-center space-x-2">
                     <Checkbox id="terms" required />
                     <Label htmlFor="terms" className="text-sm font-medium leading-none">
-                      Accetto i <Link to="#" className="text-primary hover:underline">Termini di servizio</Link> e la <Link to="#" className="text-primary hover:underline">Privacy Policy</Link>
+                      Accetto i <Link to="/terms-conditions" className="text-primary hover:underline">Termini di servizio</Link> e la <Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>
                     </Label>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
