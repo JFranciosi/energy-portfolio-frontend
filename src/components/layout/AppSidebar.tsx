@@ -79,7 +79,7 @@ export const AppSidebar = () => {
     return (
         <Sidebar collapsible={isMobile ? "offcanvas" : "none"}
                  className={!isMobile ? "fixed left-0 top-0 h-screen z-30" : ""}>
-            <SidebarHeader className="bg-white/20">
+            <SidebarHeader className="bg-white/50">
                 <div className="flex items-center justify-between p-2">
                     <Logo/>
                     {isMobile && <SidebarTrigger className="md:block lg:hidden"/>}

@@ -1,275 +1,500 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileUploader } from '@/components/energy-portfolio/FileUploader';
-import { CollapsibleSidebar } from '@/components/energy-portfolio/CollapsibleSidebar';
-import { StatusIndicator } from '@/components/energy-portfolio/StatusIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
-import { Download, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, Search, ChevronDown, ChevronUp, Upload, Loader2 } from 'lucide-react';
 
+// Definire l'interfaccia per i file delle bollette provenienti dall'API
 interface BillFile {
-  id: string;
-  name: string;
-  date: string;
-  pod: string;
-  consumption: string;
-  size: string;
+    id: string;
+    fileName: string;
+    idPod: string;
+    // Altre proprietà che potrebbero essere presenti nei dati API
+    uploadDate?: string;
+    size?: string;
 }
 
-const UploadBillsPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPod, setSelectedPod] = useState<string>('all');
-  const [sortColumn, setSortColumn] = useState<string>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  
-  const mockBills: BillFile[] = [
-    {
-      id: '1',
-      name: 'Bolletta_Maggio_2025.pdf',
-      date: '15 maggio 2025',
-      pod: 'IT001E12345678',
-      consumption: '3.450 kWh',
-      size: '1.2 MB'
-    },
-    {
-      id: '2',
-      name: 'Bolletta_Aprile_2025.pdf',
-      date: '15 aprile 2025',
-      pod: 'IT001E12345678',
-      consumption: '3.200 kWh',
-      size: '1.1 MB'
-    },
-    {
-      id: '3',
-      name: 'Bolletta_Marzo_2025.pdf',
-      date: '15 marzo 2025',
-      pod: 'IT001E12345678',
-      consumption: '3.600 kWh',
-      size: '1.3 MB'
-    },
-    {
-      id: '4',
-      name: 'Bolletta_Maggio_2025_Sede2.pdf',
-      date: '10 maggio 2025',
-      pod: 'IT001E87654321',
-      consumption: '2.100 kWh',
-      size: '1.0 MB'
-    },
-    {
-      id: '5',
-      name: 'Bolletta_Aprile_2025_Sede2.pdf',
-      date: '10 aprile 2025',
-      pod: 'IT001E87654321',
-      consumption: '2.250 kWh',
-      size: '1.1 MB'
-    },
-  ];
+// Definire l'interfaccia per i POD
+interface Pod {
+    id: string;
+    // Altre proprietà del POD che potrebbero essere presenti nell'API
+    name?: string;
+    address?: string;
+}
 
-  const uniquePods = Array.from(new Set(mockBills.map(bill => bill.pod)));
+// Componente personalizzato per l'upload dei file
+const FileUploadSection = ({ onFileUploadSuccess }) => {
+    const PATH_DEV = "http://localhost:8081";
+    const [file, setFile] = useState<File | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0] || null;
 
-  const sortedAndFilteredBills = mockBills
-    .filter(bill => 
-      bill.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-      (selectedPod === 'all' || bill.pod === selectedPod)
-    )
-    .sort((a, b) => {
-      const aValue = a[sortColumn as keyof BillFile];
-      const bValue = b[sortColumn as keyof BillFile];
-      
-      if (sortDirection === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+        if (selectedFile) {
+            // Verifica che sia un file PDF
+            if (!selectedFile.type.includes('pdf')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Formato file non supportato',
+                    text: 'Carica solo file in formato PDF'
+                });
+                return;
+            }
 
-  const handleFileAccepted = (file: File) => {
-    console.log('File accepted:', file);
-    // Here you would typically handle the file, maybe upload it to a server
-  };
+            setFile(selectedFile);
+        }
+    };
 
-  const sortIcon = (column: string) => {
-    if (sortColumn !== column) return null;
-    return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
-  };
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(true);
+    };
 
-  return (
-    <div className="flex h-full">
-      <div className="flex-1 p-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">Inserimento Bollette</h1>
-        <p className="text-lg text-muted-foreground mb-8">
-          Carica e gestisci le tue bollette energetiche
-        </p>
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+    };
 
-        {/* Upload Section */}
-        <div className="mb-8">
-          <FileUploader onFileAccepted={handleFileAccepted} />
-        </div>
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
 
-        {/* Filter Controls */}
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca bollette..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-          <Select value={selectedPod} onValueChange={setSelectedPod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filtra per POD" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti i POD</SelectItem>
-              {uniquePods.map(pod => (
-                <SelectItem key={pod} value={pod}>{pod}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        const droppedFile = e.dataTransfer.files?.[0] || null;
 
-        {/* Bills Table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead 
-                  className="w-[250px] cursor-pointer"
-                  onClick={() => handleSort('name')}
-                >
-                  <div className="flex items-center">
-                    Nome File {sortIcon('name')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer"
-                  onClick={() => handleSort('date')}
-                >
-                  <div className="flex items-center">
-                    Data {sortIcon('date')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer"
-                  onClick={() => handleSort('pod')}
-                >
-                  <div className="flex items-center">
-                    POD {sortIcon('pod')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer"
-                  onClick={() => handleSort('consumption')}
-                >
-                  <div className="flex items-center">
-                    Consumo {sortIcon('consumption')}
-                  </div>
-                </TableHead>
-                <TableHead className="text-right">Azioni</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedAndFilteredBills.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    Nessuna bolletta trovata
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedAndFilteredBills.map((bill) => (
-                  <TableRow key={bill.id}>
-                    <TableCell>
-                      <div className="font-medium">{bill.name}</div>
-                      <div className="text-xs text-muted-foreground">{bill.size}</div>
-                    </TableCell>
-                    <TableCell>{bill.date}</TableCell>
-                    <TableCell>{bill.pod}</TableCell>
-                    <TableCell>{bill.consumption}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Download className="h-4 w-4" />
-                        <span className="sr-only">Download</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+        if (droppedFile) {
+            // Verifica che sia un file PDF
+            if (!droppedFile.type.includes('pdf')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Formato file non supportato',
+                    text: 'Carica solo file in formato PDF'
+                });
+                return;
+            }
 
-      {/* Sidebar */}
-      <CollapsibleSidebar title="Statistiche Upload">
-        <div className="space-y-4">
-          <div className="bg-card border rounded-lg p-4">
-            <h4 className="text-sm font-medium mb-3">Stato Caricamenti</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Completati</span>
-                <StatusIndicator status="success" text="12" className="h-6" />
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">In corso</span>
-                <StatusIndicator status="loading" text="1" className="h-6" />
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Con errori</span>
-                <StatusIndicator status="error" text="2" className="h-6" />
-              </div>
-            </div>
-          </div>
+            setFile(droppedFile);
+        }
+    };
 
-          <div className="bg-card border rounded-lg p-4">
-            <h4 className="text-sm font-medium mb-3">POD Monitorati</h4>
-            <div className="space-y-2">
-              {uniquePods.map((pod) => (
-                <div key={pod} className="flex justify-between text-sm">
-                  <span>{pod}</span>
-                  <span className="font-medium">
-                    {mockBills.filter(bill => bill.pod === pod).length} bollette
-                  </span>
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+
+        // Se non è stato selezionato alcun file, mostra un alert
+        if (!file) {
+            await Swal.fire({
+                icon: 'error',
+                title: 'Errore',
+                text: 'Seleziona un file da caricare'
+            });
+            return;
+        }
+
+        // Imposta lo state di loading
+        setIsLoading(true);
+
+        const formData = new FormData();
+        formData.append('fileName', file.name);
+        formData.append('fileData', file);
+
+        try {
+            // Effettua la richiesta al server
+            const response = await fetch(`${PATH_DEV}/files/upload`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+
+            const responseText = await response.text();
+
+            if (response.ok) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Successo',
+                    text: responseText || 'File caricato e processato con successo.'
+                });
+
+                // Reset del file
+                setFile(null);
+
+                // Notifica il componente padre che il caricamento è avvenuto con successo
+                onFileUploadSuccess();
+            } else {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Errore',
+                    text: responseText || 'Errore durante il caricamento del file.'
+                });
+            }
+        } catch (error) {
+            console.error("Errore nella richiesta:", error);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Errore',
+                text: 'Si è verificato un errore imprevisto. Riprova più tardi.'
+            });
+        } finally {
+            // Al termine della richiesta, reinizializza lo state di loading
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="w-full">
+            <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center ${
+                    dragActive ? "border-primary bg-primary/5" : "border-gray-300"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
+                <div className="mb-4">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="bg-card border rounded-lg p-4">
-            <h4 className="text-sm font-medium mb-3">Periodo Coperto</h4>
-            <p className="text-sm text-muted-foreground">
-              Da <span className="font-medium">Marzo 2025</span> a <span className="font-medium">Maggio 2025</span>
-            </p>
-          </div>
+                <h3 className="text-lg font-medium mb-2">
+                    Carica la tua bolletta energetica
+                </h3>
+
+                <p className="text-sm text-muted-foreground mb-4">
+                    Trascina qui il tuo file PDF o clicca per selezionarlo
+                </p>
+
+                <p className="text-xs text-muted-foreground mb-4">
+                    Formati supportati: PDF
+                </p>
+
+                <input
+                    type="file"
+                    id="file-upload"
+                    accept=".pdf"
+                    onChange={handleChange}
+                    className="hidden"
+                />
+
+                <div className="space-y-3">
+                    <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                        disabled={isLoading}
+                    >
+                        Seleziona file
+                    </Button>
+
+                    {file && (
+                        <div className="mt-4 p-3 bg-muted rounded-md">
+                            <p className="text-sm font-medium">File selezionato:</p>
+                            <p className="text-sm">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                                {(file.size / (1024 * 1024)).toFixed(2)} MB
+                            </p>
+                        </div>
+                    )}
+
+                    {file && (
+                        <Button
+                            className="mt-4 w-full"
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Caricamento in corso...
+                                </>
+                            ) : (
+                                "Carica file"
+                            )}
+                        </Button>
+                    )}
+                </div>
+            </div>
         </div>
-      </CollapsibleSidebar>
-    </div>
-  );
+    );
+};
+
+const UploadBillsPage = () => {
+    const PATH_DEV = "http://localhost:8081";
+
+    // Stati
+    const [data, setData] = useState<BillFile[]>([]);
+    const [pod, setPod] = useState<Pod[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedPod, setSelectedPod] = useState<string>('all');
+    const [sortColumn, setSortColumn] = useState<string>('fileName');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [loading, setLoading] = useState(true);
+
+    // Fetch dei dati all'avvio del componente
+    useEffect(() => {
+        getFiles();
+        getPod();
+    }, []);
+
+    // Funzione per ottenere i file delle bollette
+    const getFiles = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${PATH_DEV}/pod/bollette`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setData(data);
+            } else {
+                console.error('Errore durante il recupero delle bollette');
+            }
+        } catch (error) {
+            console.error('Errore durante la chiamata fetch:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Funzione per ottenere i POD
+    const getPod = async () => {
+        try {
+            const response = await fetch(`${PATH_DEV}/pod`, {
+                credentials: 'include',
+                method: 'GET',
+                headers: {'Content-Type': 'application/json'}
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setPod(data);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errore',
+                    text: 'Errore durante il recupero dei POD'
+                });
+            }
+        } catch (error) {
+            console.error('Errore durante il recupero dei POD:', error);
+        }
+    };
+
+    // Funzione per scaricare un file
+    const downloadFile = async (id: string, name: string) => {
+        try {
+            const response = await axios.get(`${PATH_DEV}/files/${id}/download`, {
+                responseType: 'blob',
+            });
+
+            const contentDisposition = response.headers['content-disposition'];
+            const fileName = contentDisposition
+                ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                : name;
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading file', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Errore',
+                text: 'Impossibile scaricare il file'
+            });
+        }
+    };
+
+    // Gestione ordinamento
+    const handleSort = (column: string) => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    // Icona di ordinamento
+    const sortIcon = (column: string) => {
+        if (sortColumn !== column) return null;
+        return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+    };
+
+    // Funzione chiamata dopo un caricamento file con successo
+    const handleFileUploadSuccess = () => {
+        // Aggiorna la lista dei file
+        getFiles();
+    };
+
+    // Filtraggio e ordinamento dei dati
+    const filteredAndSortedData = data
+        .filter(file => {
+            // Prima controlla se il POD selezionato corrisponde
+            const podMatches = selectedPod === 'all' || file.idPod === selectedPod;
+
+            // Poi controlla se il termine di ricerca è presente nel nome file o nell'ID POD
+            const searchMatches =
+                file.fileName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                file.idPod?.toLowerCase().includes(searchTerm.toLowerCase());
+
+            // Restituisce true solo se entrambe le condizioni sono soddisfatte
+            return podMatches && searchMatches;
+        })
+        .sort((a, b) => {
+            // Ordinamento
+            const aValue = a[sortColumn as keyof BillFile] || '';
+            const bValue = b[sortColumn as keyof BillFile] || '';
+
+            if (sortDirection === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+
+    return (
+        <div className="flex h-full">
+            <div className="flex-1 p-8">
+                <h1 className="text-3xl font-bold text-primary mb-2">Inserimento Bollette</h1>
+                <p className="text-lg text-muted-foreground mb-8">
+                    Carica e gestisci le tue bollette energetiche
+                </p>
+
+                {/* Upload Section */}
+                <div className="mb-8">
+                    <FileUploadSection onFileUploadSuccess={handleFileUploadSuccess} />
+                </div>
+
+                {/* Filter Controls */}
+                <div className="flex flex-wrap gap-4 mb-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Cerca bollette..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-8"
+                        />
+                    </div>
+                    <Select
+                        value={selectedPod}
+                        onValueChange={setSelectedPod}
+                    >
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filtra per POD" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Tutti i POD</SelectItem>
+                            {pod.map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.id}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Bills Table */}
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead
+                                    className="w-[250px] cursor-pointer"
+                                    onClick={() => handleSort('fileName')}
+                                >
+                                    <div className="flex items-center">
+                                        Nome File {sortIcon('fileName')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => handleSort('uploadDate')}
+                                >
+                                    <div className="flex items-center">
+                                        Data {sortIcon('uploadDate')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => handleSort('idPod')}
+                                >
+                                    <div className="flex items-center">
+                                        POD {sortIcon('idPod')}
+                                    </div>
+                                </TableHead>
+                                <TableHead className="text-right">Azioni</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                        Caricamento bollette in corso...
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredAndSortedData.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                        Nessuna bolletta trovata
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredAndSortedData.map((bill) => (
+                                    <TableRow key={bill.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{bill.fileName}</div>
+                                            {bill.size && <div className="text-xs text-muted-foreground">{bill.size}</div>}
+                                        </TableCell>
+                                        <TableCell>{bill.uploadDate || 'N/A'}</TableCell>
+                                        <TableCell>{bill.idPod}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => downloadFile(bill.id, bill.fileName)}
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                <span className="sr-only">Download</span>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default UploadBillsPage;
