@@ -1,3 +1,4 @@
+
 import React, {useEffect, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {
@@ -78,7 +79,7 @@ export const AppSidebar = () => {
     return (
         <Sidebar collapsible={isMobile ? "offcanvas" : "none"}
                  className={!isMobile ? "fixed left-0 top-0 h-screen z-30" : ""}>
-            <SidebarHeader>
+            <SidebarHeader className="bg-white/20">
                 <div className="flex items-center justify-between p-2">
                     <Logo/>
                     {isMobile && <SidebarTrigger className="md:block lg:hidden"/>}
