@@ -16,7 +16,7 @@ import EnergyPortfolioPage from "./pages/energy-portfolio/EnergyPortfolioPage";
 import UploadBillsPage from "./pages/energy-portfolio/UploadBillsPage";
 import FuturesPage from "./pages/energy-portfolio/FuturesPage";
 import CostsPage from "./pages/energy-portfolio/CostsPage";
-import CreateUserPage from "./pages/energy-portfolio/CreateUserPage";
+import CreateUserPage from "./pages/admin/CreateUserPage.tsx";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
 import CookiePolicyPage from "./pages/legal/CookiePolicyPage";
