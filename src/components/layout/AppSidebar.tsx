@@ -1,9 +1,9 @@
-
 import React, {useEffect, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuItem,
@@ -14,20 +14,23 @@ import {
     SidebarTrigger
 } from '@/components/ui/sidebar';
 import {Logo} from '@/components/logo';
-import {Home, Mail, Briefcase, User, LogIn, BarChart3, FileText} from 'lucide-react';
+import {Home, Mail, Briefcase, User, LogIn, BarChart3, FileText, LogOut} from 'lucide-react';
 import {useIsMobile} from '@/hooks/use-mobile';
+import {Button} from '@/components/ui/button';
 
 export const AppSidebar = () => {
+    const PATH_DEV = "http://localhost:8081";
     const [accessoEffettuato, setAccessoEffettuato] = useState(false);
     const [error, setError] = useState('');
     const [categoriaUtente, setCategoriaUtente] = useState('');
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const location = useLocation();
     const isMobile = useIsMobile();
     const isActive = (path: string) => location.pathname === path;
 
     const checkAccesso = async () => {
         try {
-            const response = await fetch(`http://localhost:8081/Autentication/check`, {
+            const response = await fetch(`${PATH_DEV}/Autentication/check`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {'Content-Type': 'application/json'}
@@ -44,7 +47,7 @@ export const AppSidebar = () => {
 
     const checkCategoria = async () => {
         try {
-            const response = await fetch(`http://localhost:8081/Autentication/checkCategoria`, {
+            const response = await fetch(`${PATH_DEV}/Autentication/checkCategoria`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {'Content-Type': 'application/json'}
@@ -61,6 +64,30 @@ export const AppSidebar = () => {
         }
     };
 
+    // Funzione di logout
+    const logOut = async () => {
+        setIsLoggingOut(true);
+        try {
+            const response = await fetch(`${PATH_DEV}/Autentication/logout`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'}
+            });
+            if (response.ok) {
+                window.location.href = "/";
+            } else {
+                const text = await response.text();
+                console.log('Errore durante il logout:', text);
+                setError("Errore durante il logout");
+            }
+        } catch (error) {
+            console.error("Errore di rete durante il logout:", error);
+            setError("Errore di rete durante il logout");
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
     useEffect(() => {
         checkAccesso();
         checkCategoria();
@@ -72,7 +99,12 @@ export const AppSidebar = () => {
         {title: 'Servizi', path: '/services', icon: Briefcase, visible: true},
         {title: 'Contatti', path: '/contact', icon: Mail, visible: true},
         {title: 'Energy Portfolio', path: '/energy-portfolio', icon: BarChart3, visible: accessoEffettuato},
-        {title: 'Crea Utente', path: '/energy-portfolio/create-user', icon: User, visible: accessoEffettuato && categoriaUtente === 'Admin'},
+        {
+            title: 'Crea Utente',
+            path: '/energy-portfolio/create-user',
+            icon: User,
+            visible: accessoEffettuato && categoriaUtente === 'Admin'
+        },
         {title: 'Profilo', path: '/profile', icon: User, visible: accessoEffettuato},
     ];
 
@@ -87,9 +119,9 @@ export const AppSidebar = () => {
             </SidebarHeader>
 
             <SidebarContent className="overflow-y-auto">
-                {/* Login Button - Mostriamo solo se non è effettuato l'accesso */}
-                {!accessoEffettuato && (
-                    <SidebarMenu className="mb-4">
+                {/* Login/Logout Buttons */}
+                <SidebarMenu className="mb-4">
+                    {!accessoEffettuato &&
                         <SidebarMenuItem>
                             <SidebarMenuButton
                                 asChild
@@ -103,8 +135,8 @@ export const AppSidebar = () => {
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                    </SidebarMenu>
-                )}
+                    }
+                </SidebarMenu>
 
                 <SidebarGroup>
                     <SidebarGroupLabel>Menu</SidebarGroupLabel>
@@ -132,6 +164,27 @@ export const AppSidebar = () => {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
+
+            {/* Alternativa: pulsante di logout nel footer */}
+            {accessoEffettuato && (
+                <SidebarFooter className="border-t py-2">
+                    <div className="px-3">
+                        {error && (
+                            <p className="text-xs text-red-500 mb-2">{error}</p>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={logOut}
+                            disabled={isLoggingOut}
+                        >
+                            <LogOut className="h-4 w-4"/>
+                            <span>{isLoggingOut ? "Uscita in corso..." : "Logout"}</span>
+                        </Button>
+                    </div>
+                </SidebarFooter>
+            )}
         </Sidebar>
     );
 };
