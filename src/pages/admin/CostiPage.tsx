@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { AlertCircle, Upload, Download } from "lucide-react";
+import { AlertCircle, Upload, Download, Filter } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
@@ -30,7 +30,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Swal from 'sweetalert2';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Interfacce per definire le strutture dati
 interface Costo {
@@ -57,6 +65,7 @@ interface PaginatedResponse {
 
 const CostiPage = () => {
   const PATH_DEV = "http://localhost:8081";
+  const isMobile = useIsMobile();
   
   // Stato per i dati e la paginazione
   const [data, setData] = useState<Costo[]>([]);
@@ -372,42 +381,63 @@ const CostiPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div>
+          {/* Nuovi filtri responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="space-y-2">
               <Label htmlFor="filterCategoria">Categoria</Label>
-              <Input
-                id="filterCategoria"
-                placeholder="Filtra per categoria"
+              <Select
                 value={filterCategoria}
-                onChange={(e) => setFilterCategoria(e.target.value)}
-              />
+                onValueChange={(value) => setFilterCategoria(value)}
+              >
+                <SelectTrigger id="filterCategoria" className="w-full">
+                  <SelectValue placeholder="Filtra per Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutte le Categorie</SelectItem>
+                  <SelectItem value="dispacciamento">Dispacciamento</SelectItem>
+                  <SelectItem value="trasporti">Trasporti</SelectItem>
+                  <SelectItem value="penali">Penali</SelectItem>
+                  <SelectItem value="oneri">Oneri</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div>
+            
+            <div className="space-y-2">
               <Label htmlFor="filterAnno">Anno</Label>
               <Input
                 id="filterAnno"
-                placeholder="Filtra per anno"
+                placeholder="Filtra per Anno"
                 value={filterAnno}
                 onChange={(e) => setFilterAnno(e.target.value)}
               />
             </div>
-            <div>
+            
+            <div className="space-y-2">
               <Label htmlFor="filterAnnoRiferimento">Anno di riferimento</Label>
               <Input
                 id="filterAnnoRiferimento"
-                placeholder="Filtra per anno di riferimento"
+                placeholder="Filtra per Anno di Riferimento"
                 value={filterAnnoRiferimento}
                 onChange={(e) => setFilterAnnoRiferimento(e.target.value)}
               />
             </div>
-            <div>
-              <Label htmlFor="filterIntervalloPotenza">Intervallo Potenza</Label>
-              <Input
-                id="filterIntervalloPotenza"
-                placeholder="Filtra per intervallo potenza"
+            
+            <div className="space-y-2">
+              <Label htmlFor="filterIntervalloPotenza">Intervallo di Potenza</Label>
+              <Select
                 value={filterIntervalloPotenza}
-                onChange={(e) => setFilterIntervalloPotenza(e.target.value)}
-              />
+                onValueChange={(value) => setFilterIntervalloPotenza(value)}
+              >
+                <SelectTrigger id="filterIntervalloPotenza" className="w-full">
+                  <SelectValue placeholder="Filtra per Intervallo di Potenza" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutti gli Intervalli</SelectItem>
+                  <SelectItem value=">500KW">+500KW</SelectItem>
+                  <SelectItem value="100-500KW">100-500KW</SelectItem>
+                  <SelectItem value="<100KW">-100KW</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
