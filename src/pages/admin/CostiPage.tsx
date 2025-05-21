@@ -38,6 +38,15 @@ interface Costo {
   annoRiferimento: string;
 }
 
+// Interfaccia per la risposta paginata dal server
+interface PaginatedResponse {
+  contenuto: Costo[];
+  pagina: number;
+  dimensione: number;
+  totaleElementi: number;
+  totalePagine: number;
+}
+
 const CostiPage = () => {
   const PATH_DEV = "http://localhost:8081";
   
@@ -46,6 +55,7 @@ const CostiPage = () => {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ids, setIds] = useState<number[]>([]);
@@ -66,6 +76,8 @@ const CostiPage = () => {
       if (filterAnno) params.append("anno", filterAnno);
       if (filterAnnoRiferimento) params.append("annoRiferimento", filterAnnoRiferimento);
       if (filterIntervalloPotenza) params.append("intervalloPotenza", filterIntervalloPotenza);
+      
+      // Aggiungi parametri di paginazione
       params.append("page", page.toString());
       params.append("size", size.toString());
 
@@ -80,29 +92,30 @@ const CostiPage = () => {
         const responseData = await response.json();
         console.log("Dati ricevuti:", responseData);
         
-        // Gestione per diversi formati di risposta
-        let costiArray: Costo[];
-        
-        if (Array.isArray(responseData)) {
-          // Se responseData è già un array
-          costiArray = responseData;
+        // Gestione per il formato di risposta paginato
+        if (responseData && responseData.contenuto && Array.isArray(responseData.contenuto)) {
+          setData(responseData.contenuto);
+          setTotalPages(responseData.totalePagine || 1);
+          setTotalElements(responseData.totaleElementi || 0);
+          setPage(responseData.pagina || 0);
+        } else if (Array.isArray(responseData)) {
+          // Fallback per risposta in formato array
+          setData(responseData);
+          setTotalPages(Math.ceil(responseData.length / size) || 1);
+          setTotalElements(responseData.length || 0);
         } else if (responseData && typeof responseData === 'object') {
-          // Se responseData è un oggetto con proprietà numeriche (simile a un array)
-          costiArray = Object.values(responseData);
+          // Fallback per risposta in formato oggetto
+          const costiArray = Object.values(responseData);
+          if (Array.isArray(costiArray)) {
+            setData(costiArray as Costo[]);
+            setTotalPages(Math.ceil(costiArray.length / size) || 1);
+            setTotalElements(costiArray.length || 0);
+          } else {
+            throw new Error("Formato di risposta non riconosciuto");
+          }
         } else {
-          // Fallback se il formato non è riconosciuto
-          console.error('Formato risposta non riconosciuto:', responseData);
-          setError("Formato di risposta non riconosciuto");
-          setData([]);
-          toast.error("Errore nel formato dei dati ricevuti");
-          setLoading(false);
-          return;
+          throw new Error("Formato di risposta non riconosciuto");
         }
-        
-        setData(costiArray);
-        // Calcola il numero totale di pagine
-        const totalItems = costiArray.length || 0;
-        setTotalPages(Math.ceil(totalItems / size) || 1);
       } else {
         console.error('Errore durante il fetch:', response.statusText);
         setData([]);
@@ -265,7 +278,7 @@ const CostiPage = () => {
                   </TableRow>
                 ) : (
                   data.map((costo, index) => (
-                    <TableRow key={costo.id}>
+                    <TableRow key={costo.id || `row-${index}`}>
                       <TableCell>
                         <input
                           type="checkbox"
@@ -307,6 +320,14 @@ const CostiPage = () => {
               </TableBody>
             </Table>
           </div>
+
+          {!loading && data.length > 0 && (
+            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
+              <div>
+                Mostrando {page * size + 1}-{Math.min((page + 1) * size, totalElements)} di {totalElements} elementi
+              </div>
+            </div>
+          )}
 
           <Pagination className="mt-4">
             <PaginationContent>
