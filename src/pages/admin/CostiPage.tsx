@@ -80,19 +80,29 @@ const CostiPage = () => {
         const responseData = await response.json();
         console.log("Dati ricevuti:", responseData);
         
-        // Verifica che responseData sia un array
+        // Gestione per diversi formati di risposta
+        let costiArray: Costo[];
+        
         if (Array.isArray(responseData)) {
-          setData(responseData);
-          
-          // Calcola il numero totale di pagine
-          const totalItems = responseData.length || 0;
-          setTotalPages(Math.ceil(totalItems / size) || 1);
+          // Se responseData è già un array
+          costiArray = responseData;
+        } else if (responseData && typeof responseData === 'object') {
+          // Se responseData è un oggetto con proprietà numeriche (simile a un array)
+          costiArray = Object.values(responseData);
         } else {
-          console.error('La risposta non è un array:', responseData);
+          // Fallback se il formato non è riconosciuto
+          console.error('Formato risposta non riconosciuto:', responseData);
+          setError("Formato di risposta non riconosciuto");
           setData([]);
-          setError("La risposta dell'API non è nel formato atteso (array)");
           toast.error("Errore nel formato dei dati ricevuti");
+          setLoading(false);
+          return;
         }
+        
+        setData(costiArray);
+        // Calcola il numero totale di pagine
+        const totalItems = costiArray.length || 0;
+        setTotalPages(Math.ceil(totalItems / size) || 1);
       } else {
         console.error('Errore durante il fetch:', response.statusText);
         setData([]);
