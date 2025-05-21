@@ -1,3 +1,4 @@
+
 import React, {useEffect, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {
@@ -14,7 +15,7 @@ import {
     SidebarTrigger
 } from '@/components/ui/sidebar';
 import {Logo} from '@/components/logo';
-import {Home, Mail, Briefcase, User, LogIn, BarChart3, FileText, LogOut} from 'lucide-react';
+import {Home, Mail, Briefcase, User, LogIn, BarChart3, FileText, LogOut, DollarSign} from 'lucide-react';
 import {useIsMobile} from '@/hooks/use-mobile';
 import {Button} from '@/components/ui/button';
 
@@ -103,6 +104,12 @@ export const AppSidebar = () => {
             title: 'Crea Utente',
             path: '/energy-portfolio/create-user',
             icon: User,
+            visible: accessoEffettuato && categoriaUtente === 'Admin'
+        },
+        {
+            title: 'Gestione Costi',
+            path: '/admin/costi',
+            icon: DollarSign,
             visible: accessoEffettuato && categoriaUtente === 'Admin'
         },
         {title: 'Profilo', path: '/profile', icon: User, visible: accessoEffettuato},
