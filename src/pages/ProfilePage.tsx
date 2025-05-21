@@ -15,10 +15,11 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage
 } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, Edit, Lock, Mail, Phone, User } from 'lucide-react';
-import { toast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast"; // Fixed import path
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -149,6 +150,7 @@ const EditableSwitch: React.FC<EditableSwitchProps> = ({ label, description, val
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState<UserData>(initialUserData);
+  const { toast } = useToast(); // Using the correct hook
   
   // Create form instance for notifications tab
   const notificationsForm = useForm({
