@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Upload, Download } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
@@ -30,6 +30,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import Swal from 'sweetalert2';
 
 // Interfacce per definire le strutture dati
 interface Costo {
@@ -78,6 +79,10 @@ const CostiPage = () => {
   const [filterAnnoRiferimento, setFilterAnnoRiferimento] = useState("");
   const [filterIntervalloPotenza, setFilterIntervalloPotenza] = useState("");
 
+  // Stato per il file upload
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  
   // Funzione per caricare i costi filtrati
   const fetchCostiFiltrati = async (page = 0, size = 50) => {
     setLoading(true);
@@ -185,19 +190,31 @@ const CostiPage = () => {
       
       if (response.ok) {
         setIsEditDialogOpen(false);
-        toast.success("Modifiche salvate con successo");
-        // Ricarica i dati dopo il salvataggio
-        fetchCostiFiltrati(page, size);
+        Swal.fire({
+          icon: "success",
+          text: "Modifiche salvate con successo",
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          fetchCostiFiltrati(page, size); // Ricarica i dati dopo il salvataggio
+        });
       } else {
-        toast.error("Errore durante il salvataggio delle modifiche");
+        Swal.fire({
+          icon: "error",
+          text: "Errore durante il salvataggio delle modifiche"
+        });
         console.log("modifiche: " + JSON.stringify(editRowData));
       }
     } catch (error) {
       console.error('Errore durante il salvataggio:', error);
-      toast.error("Errore di connessione durante il salvataggio");
+      Swal.fire({
+        icon: "error",
+        text: "Errore di connessione durante il salvataggio"
+      });
     }
   };
 
+  // Funzione per eliminare un costo
   const confirmAndDeleteCosto = async (id: number) => {
     if (window.confirm("Sei sicuro di voler eliminare questo costo?")) {
       try {
@@ -235,11 +252,124 @@ const CostiPage = () => {
     }
   };
 
+  // Gestione upload file Excel
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      await Swal.fire({
+        icon: "error",
+        text: "Seleziona un file da caricare",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      
+      const response = await fetch(`${PATH_DEV}/costi/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        await Swal.fire({
+          icon: "success",
+          text: "Upload dei dati avvenuto con successo",
+        });
+        setIsUploadDialogOpen(false);
+        setFile(null);
+        fetchCostiFiltrati(page, size); // Ricarica i dati dopo l'upload
+      } else {
+        await Swal.fire({
+          icon: "error",
+          text: "Errore durante l'upload dei dati",
+        });
+      }
+    } catch (error) {
+      console.error('Errore durante l\'upload:', error);
+      await Swal.fire({
+        icon: "error",
+        text: "Si è verificato un errore imprevisto durante l'upload",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadCosti = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${PATH_DEV}/costi/downloadExcel`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'costi.xlsx');
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        await Swal.fire({
+          icon: 'success', 
+          text: 'Download dei dati avvenuto con successo'
+        });
+      } else {
+        await Swal.fire({
+          icon: 'error', 
+          text: 'Errore durante il download dei dati'
+        });
+      }
+    } catch (error) {
+      console.error('Errore durante il download:', error);
+      await Swal.fire({
+        icon: 'error', 
+        text: 'Si è verificato un errore imprevisto'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-2xl">Gestione Costi</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-2xl">Gestione Costi</CardTitle>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={() => setIsUploadDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Carica Excel
+              </Button>
+              <Button 
+                onClick={handleDownloadCosti}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Scarica Excel
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -539,6 +669,50 @@ const CostiPage = () => {
               Salva Modifiche
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per l'upload del file Excel */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Carica file Excel</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-2">
+              <Label htmlFor="file-upload">Seleziona file Excel</Label>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+              {file && (
+                <p className="text-sm text-muted-foreground">
+                  File selezionato: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsUploadDialogOpen(false)}
+                disabled={loading}
+              >
+                Annulla
+              </Button>
+              <Button 
+                type="submit"
+                disabled={loading || !file}
+              >
+                {loading ? "Caricamento in corso..." : "Carica file"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
