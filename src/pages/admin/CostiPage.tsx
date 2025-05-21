@@ -23,6 +23,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Interfacce per definire le strutture dati
 interface Costo {
@@ -59,6 +66,11 @@ const CostiPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ids, setIds] = useState<number[]>([]);
+
+  // Stato per la modifica
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editRowData, setEditRowData] = useState<Costo | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   // Stato per i filtri
   const [filterCategoria, setFilterCategoria] = useState("");
@@ -148,8 +160,42 @@ const CostiPage = () => {
 
   const handleSelectRow = (index: number, id: number) => {
     console.log("Riga selezionata:", index, "ID:", id);
-    // Implementazione per gestire la modifica
-    toast.info(`Modifica costo con ID: ${id}`);
+    // Trova il costo con l'ID corrispondente
+    const costoToEdit = data.find(costo => costo.id === id);
+    if (costoToEdit) {
+      setSelectedIndex(index);
+      setEditRowData({...costoToEdit});
+      setIsEditDialogOpen(true);
+    } else {
+      toast.error("Errore: costo non trovato");
+    }
+  };
+
+  // Funzione per gestire il salvataggio delle modifiche
+  const handleSaveChanges = async () => {
+    if (!editRowData) return;
+    
+    try {
+      const response = await fetch(`${PATH_DEV}/costi/update`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(editRowData)
+      });
+      
+      if (response.ok) {
+        setIsEditDialogOpen(false);
+        toast.success("Modifiche salvate con successo");
+        // Ricarica i dati dopo il salvataggio
+        fetchCostiFiltrati(page, size);
+      } else {
+        toast.error("Errore durante il salvataggio delle modifiche");
+        console.log("modifiche: " + JSON.stringify(editRowData));
+      }
+    } catch (error) {
+      console.error('Errore durante il salvataggio:', error);
+      toast.error("Errore di connessione durante il salvataggio");
+    }
   };
 
   const confirmAndDeleteCosto = async (id: number) => {
@@ -177,6 +223,16 @@ const CostiPage = () => {
   // Funzione per gestire il cambio pagina
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  // Funzione per gestire il cambio dei campi nel form di modifica
+  const handleEditChange = (field: keyof Costo, value: string | number) => {
+    if (editRowData) {
+      setEditRowData({
+        ...editRowData,
+        [field]: value
+      });
+    }
   };
 
   return (
@@ -373,6 +429,118 @@ const CostiPage = () => {
           </Pagination>
         </CardContent>
       </Card>
+
+      {/* Dialog per la modifica */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Modifica Costo</DialogTitle>
+          </DialogHeader>
+
+          {editRowData && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-descrizione">Descrizione</Label>
+                <Input
+                  id="edit-descrizione"
+                  value={editRowData.descrizione}
+                  onChange={(e) => handleEditChange('descrizione', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-unitaMisura">Unità Misura</Label>
+                <Input
+                  id="edit-unitaMisura"
+                  value={editRowData.unitaMisura}
+                  onChange={(e) => handleEditChange('unitaMisura', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-trimestre">Trimestre</Label>
+                <Input
+                  id="edit-trimestre"
+                  value={editRowData.trimestre}
+                  onChange={(e) => handleEditChange('trimestre', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-anno">Anno</Label>
+                <Input
+                  id="edit-anno"
+                  value={editRowData.anno}
+                  onChange={(e) => handleEditChange('anno', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-costo">Costo</Label>
+                <Input
+                  id="edit-costo"
+                  type="number"
+                  step="0.000001"
+                  value={editRowData.costo}
+                  onChange={(e) => handleEditChange('costo', parseFloat(e.target.value))}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-categoria">Categoria</Label>
+                <Input
+                  id="edit-categoria"
+                  value={editRowData.categoria}
+                  onChange={(e) => handleEditChange('categoria', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-intervalloPotenza">Intervallo Potenza</Label>
+                <Input
+                  id="edit-intervalloPotenza"
+                  value={editRowData.intervalloPotenza || ''}
+                  onChange={(e) => handleEditChange('intervalloPotenza', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-classeAgevolazione">Classe Agevolazione</Label>
+                <Input
+                  id="edit-classeAgevolazione"
+                  value={editRowData.classeAgevolazione || ''}
+                  onChange={(e) => handleEditChange('classeAgevolazione', e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-annoRiferimento">Anno Riferimento</Label>
+                <Input
+                  id="edit-annoRiferimento"
+                  value={editRowData.annoRiferimento}
+                  onChange={(e) => handleEditChange('annoRiferimento', e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleSaveChanges}
+            >
+              Salva Modifiche
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
