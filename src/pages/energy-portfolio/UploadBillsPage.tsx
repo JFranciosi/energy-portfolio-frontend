@@ -1,3 +1,4 @@
+
 import React, {useState, useEffect} from 'react';
 import {FileUploader} from '@/components/energy-portfolio/FileUploader';
 import {Button} from '@/components/ui/button';
@@ -20,8 +21,20 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {Switch} from "@/components/ui/switch";
-import {Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database} from 'lucide-react';
+import {Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database, FileText} from 'lucide-react';
 import {Label} from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 // Definire l'interfaccia per i file delle bollette provenienti dall'API
 interface BillFile {
@@ -46,6 +59,208 @@ interface Pod {
     cap?: string;
     tensioneAlimentazione?: string;
 }
+
+// Interfaccia per i dati dei costi
+interface CostiState {
+    f0: number;
+    f1: number;
+    f2: number;
+    f3: number;
+    f1_perdite: number;
+    f2_perdite: number;
+    f3_perdite: number;
+}
+
+// Schema di validazione per i campi dei costi
+const costiSchema = z.object({
+    f0: z.coerce.number().min(0, "Il valore deve essere positivo"),
+    f1: z.coerce.number().min(0, "Il valore deve essere positivo"),
+    f2: z.coerce.number().min(0, "Il valore deve essere positivo"),
+    f3: z.coerce.number().min(0, "Il valore deve essere positivo"),
+    f1_perdite: z.coerce.number().min(0, "Il valore deve essere positivo"),
+    f2_perdite: z.coerce.number().min(0, "Il valore deve essere positivo"),
+    f3_perdite: z.coerce.number().min(0, "Il valore deve essere positivo"),
+});
+
+// Componente per il form dei costi
+const CostiForm = () => {
+    const PATH_DEV = "http://localhost:8081";
+    const form = useForm<CostiState>({
+        resolver: zodResolver(costiSchema),
+        defaultValues: {
+            f0: 0,
+            f1: 0,
+            f2: 0,
+            f3: 0,
+            f1_perdite: 0,
+            f2_perdite: 0,
+            f3_perdite: 0,
+        },
+    });
+
+    const onSubmit = async (data: CostiState) => {
+        try {
+            // Invia i dati al server
+            const response = await fetch(`${PATH_DEV}/costi`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Successo',
+                    text: 'Costi salvati con successo'
+                });
+            } else {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Errore durante il salvataggio dei costi');
+            }
+        } catch (error) {
+            console.error('Errore:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Errore',
+                text: error instanceof Error ? error.message : 'Errore durante il salvataggio dei costi'
+            });
+        }
+    };
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <FormField
+                        control={form.control}
+                        name="f0"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F0 (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia unica
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="f1"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F1 (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia 1 (8:00-19:00 lun-ven)
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="f2"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F2 (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia 2 (7:00-8:00 e 19:00-23:00 lun-ven, 7:00-23:00 sab)
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="f3"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F3 (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia 3 (23:00-7:00 lun-sab, tutto dom e festivi)
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="f1_perdite"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F1 Perdite (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia 1 con perdite
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="f2_perdite"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F2 Perdite (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia 2 con perdite
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="f3_perdite"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>F3 Perdite (€/kWh)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Fascia 3 con perdite
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <Button type="submit" className="mt-6">
+                    Salva Costi
+                </Button>
+            </form>
+        </Form>
+    );
+};
 
 // Componente personalizzato per l'upload dei file
 const FileUploadSection = ({onFileUploadSuccess}) => {
@@ -254,7 +469,7 @@ const UploadBillsPage = () => {
     const [sortColumn, setSortColumn] = useState<string>('fileName');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'bills' | 'pods'>('bills'); // Aggiunto stato per la visualizzazione
+    const [viewMode, setViewMode] = useState<'bills' | 'pods' | 'costs'>('bills'); // Aggiunto stato per la visualizzazione costs
 
     // Fetch dei dati all'avvio del componente
     useEffect(() => {
@@ -418,54 +633,94 @@ const UploadBillsPage = () => {
                 <div className="flex items-center mb-6 space-x-4">
                     <div className="flex items-center space-x-2">
                         <Switch
-                            id="view-mode"
+                            id="view-mode-pods"
                             checked={viewMode === 'pods'}
-                            onCheckedChange={(checked) => setViewMode(checked ? 'pods' : 'bills')}
+                            onCheckedChange={(checked) => {
+                                if (checked) {
+                                    setViewMode('pods');
+                                } else if (viewMode === 'pods') {
+                                    setViewMode('bills');
+                                }
+                            }}
                         />
-                        <Label htmlFor="view-mode">
-                            {viewMode === 'bills' ? 'Visualizza POD' : 'Visualizza Bollette'}
+                        <Label htmlFor="view-mode-pods">
+                            {viewMode === 'pods' ? 'Visualizza Bollette' : 'Visualizza POD'}
+                        </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="view-mode-costs"
+                            checked={viewMode === 'costs'}
+                            onCheckedChange={(checked) => {
+                                if (checked) {
+                                    setViewMode('costs');
+                                } else if (viewMode === 'costs') {
+                                    setViewMode('bills');
+                                }
+                            }}
+                        />
+                        <Label htmlFor="view-mode-costs">
+                            {viewMode === 'costs' ? 'Visualizza Bollette' : 'Gestione Costi'}
                         </Label>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                         {viewMode === 'bills' ? (
                             <Upload className="mr-2 h-4 w-4"/>
-                        ) : (
+                        ) : viewMode === 'pods' ? (
                             <Database className="mr-2 h-4 w-4"/>
+                        ) : (
+                            <FileText className="mr-2 h-4 w-4"/>
                         )}
                         <span>
-                            Modalità: <strong>{viewMode === 'bills' ? 'Bollette' : 'Dati POD'}</strong>
+                            Modalità: <strong>
+                            {viewMode === 'bills' 
+                                ? 'Bollette' 
+                                : viewMode === 'pods' 
+                                    ? 'Dati POD' 
+                                    : 'Gestione Costi'}
+                            </strong>
                         </span>
                     </div>
                 </div>
 
                 {/* Filter Controls - Adattati in base alla vista */}
-                <div className="flex flex-wrap gap-4 mb-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
-                        <Input
-                            placeholder={viewMode === 'bills' ? "Cerca bollette..." : "Cerca POD..."}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-8"
-                        />
+                {viewMode !== 'costs' && (
+                    <div className="flex flex-wrap gap-4 mb-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
+                            <Input
+                                placeholder={viewMode === 'bills' ? "Cerca bollette..." : "Cerca POD..."}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-8"
+                            />
+                        </div>
+                        {viewMode === 'bills' && (
+                            <Select
+                                value={selectedPod}
+                                onValueChange={setSelectedPod}
+                            >
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filtra per POD"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tutti i POD</SelectItem>
+                                    {pod.map(p => (
+                                        <SelectItem key={p.id} value={p.id}>{p.id}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
-                    {viewMode === 'bills' && (
-                        <Select
-                            value={selectedPod}
-                            onValueChange={setSelectedPod}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filtra per POD"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tutti i POD</SelectItem>
-                                {pod.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.id}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                </div>
+                )}
+
+                {/* Costs Form - Visibile solo quando viewMode è 'costs' */}
+                {viewMode === 'costs' && (
+                    <div className="bg-card rounded-lg border p-6 shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4">Gestione Costi Energetici</h2>
+                        <CostiForm />
+                    </div>
+                )}
 
                 {/* Bills Table - Visibile solo quando viewMode è 'bills' */}
                 {viewMode === 'bills' && (
