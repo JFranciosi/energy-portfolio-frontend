@@ -393,7 +393,7 @@ const CostiPage = () => {
                   <SelectValue placeholder="Filtra per Categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tutte le Categorie</SelectItem>
+                  <SelectItem value="all">Tutte le Categorie</SelectItem>
                   <SelectItem value="dispacciamento">Dispacciamento</SelectItem>
                   <SelectItem value="trasporti">Trasporti</SelectItem>
                   <SelectItem value="penali">Penali</SelectItem>
@@ -432,7 +432,7 @@ const CostiPage = () => {
                   <SelectValue placeholder="Filtra per Intervallo di Potenza" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tutti gli Intervalli</SelectItem>
+                  <SelectItem value="all">Tutti gli Intervalli</SelectItem>
                   <SelectItem value=">500KW">+500KW</SelectItem>
                   <SelectItem value="100-500KW">100-500KW</SelectItem>
                   <SelectItem value="<100KW">-100KW</SelectItem>
