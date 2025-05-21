@@ -20,8 +20,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { toast } from "sonner";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Interfacce per definire le strutture dati
 interface Costo {
@@ -46,6 +47,7 @@ const CostiPage = () => {
   const [size, setSize] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [ids, setIds] = useState<number[]>([]);
 
   // Stato per i filtri
@@ -57,6 +59,7 @@ const CostiPage = () => {
   // Funzione per caricare i costi filtrati
   const fetchCostiFiltrati = async (page = 0, size = 50) => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams();
       if (filterCategoria) params.append("categoria", filterCategoria);
@@ -78,16 +81,17 @@ const CostiPage = () => {
         console.log("Dati ricevuti:", responseData);
         setData(responseData);
         
-        // Calcola il numero totale di pagine (se l'API restituisce il conteggio totale)
-        // Supponendo che la risposta contenga un campo "totalItems"
+        // Calcola il numero totale di pagine
         const totalItems = responseData.length || 0; // Questo dovrebbe essere regolato in base alla tua API
-        setTotalPages(Math.ceil(totalItems / size));
+        setTotalPages(Math.ceil(totalItems / size) || 1);
       } else {
         console.error('Errore durante il fetch:', response.statusText);
+        setError(`Errore del server: ${response.status} ${response.statusText}`);
         toast.error("Errore nel caricamento dei costi");
       }
     } catch (error) {
       console.error('Errore durante il fetch dei costi filtrati:', error);
+      setError("Impossibile connettersi al server. Verifica che il server API sia in esecuzione su http://localhost:8081");
       toast.error("Errore di connessione");
     } finally {
       setLoading(false);
@@ -187,6 +191,25 @@ const CostiPage = () => {
             </div>
           </div>
           
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Errore</AlertTitle>
+              <AlertDescription>
+                {error}
+                <div className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fetchCostiFiltrati(page, size)}
+                  >
+                    Riprova
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
@@ -216,7 +239,7 @@ const CostiPage = () => {
                 ) : data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={13} className="text-center py-4">
-                      Nessun risultato trovato
+                      {error ? "Impossibile caricare i dati" : "Nessun risultato trovato"}
                     </TableCell>
                   </TableRow>
                 ) : (
