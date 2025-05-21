@@ -7,6 +7,7 @@ import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
 import { DataFilters } from '@/components/energy-portfolio/DataFilters';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
 import { useToast } from '@/components/ui/use-toast';
+import PowerBIReport, { energyportfolio } from '@/components/energy-portfolio/PowerBIReport';
 
 // Define the path for API calls
 const PATH = "http://localhost:8081"; // Adjust based on your actual API path
@@ -130,6 +131,21 @@ const DashboardPage = () => {
     }
   }
 
+  // Map tabs to reportIds from the energyportfolio config
+  const getReportIdForTab = (tabId: string) => {
+    switch (tabId) {
+      case 'consumption':
+        return energyportfolio.reports.home.reportId;
+      case 'costs':
+        return energyportfolio.reports.controllo.reportId;
+      case 'comparison':
+        return energyportfolio.reports.past.reportId;
+      // For other tabs, default to home report
+      default:
+        return energyportfolio.reports.home.reportId;
+    }
+  };
+
   const dashboardTabs = [
     { id: 'consumption', label: 'Consumi' },
     { id: 'costs', label: 'Costi' },
@@ -158,29 +174,22 @@ const DashboardPage = () => {
         onExport={() => console.log('Exporting data...')}
       />
       
-      {/* Chart Area - Content changes based on active tab */}
+      {/* Chart Area with Power BI Reports */}
       <Card className="mb-6 p-6">
-        <CardContent className={`${isLoading ? 'opacity-50' : ''} min-h-[400px] flex items-center justify-center`}>
+        <CardContent className={`${isLoading ? 'opacity-50' : ''} min-h-[500px] flex items-center justify-center`}>
           {isLoading ? (
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
               <p>Caricamento dati...</p>
             </div>
           ) : (
-            <div className="w-full h-[400px] flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
-              <div className="text-center p-8">
-                <h3 className="text-xl font-semibold mb-2">
-                  {activeTab === 'consumption' && "Grafico Consumi"}
-                  {activeTab === 'costs' && "Grafico Costi"}
-                  {activeTab === 'comparison' && "Grafico Confronto Anni"}
-                  {activeTab === 'breakdown' && "Grafico Suddivisione"}
-                  {activeTab === 'powerbi' && "Report Power BI"}
-                </h3>
-                <p className="text-muted-foreground">
-                  Area riservata per il grafico Power BI - {dashboardTabs.find(tab => tab.id === activeTab)?.label}
-                </p>
-              </div>
-            </div>
+            <>
+              {/* Power BI Report display */}
+              <PowerBIReport 
+                reportId={getReportIdForTab(activeTab)} 
+                className="w-full h-[500px]" 
+              />
+            </>
           )}
         </CardContent>
       </Card>
@@ -189,8 +198,8 @@ const DashboardPage = () => {
       {activeTab === 'consumption' && (
         <NotesSection title="Note sui consumi" defaultOpen>
           <p>
-            Questa sezione mostrerà grafici relativi ai consumi energetici. 
-            I dati vengono caricati all'apertura della pagina tramite le API.
+            Questa sezione mostra il report Power BI sui consumi energetici.
+            I dati vengono caricati automaticamente all'apertura della pagina.
           </p>
         </NotesSection>
       )}
@@ -198,7 +207,7 @@ const DashboardPage = () => {
       {activeTab === 'costs' && (
         <NotesSection title="Note sui costi" defaultOpen>
           <p>
-            Questa sezione mostrerà grafici relativi ai costi energetici.
+            Questa sezione mostra il report Power BI sui costi energetici.
             È possibile filtrare i dati usando i controlli sopra il grafico.
           </p>
         </NotesSection>
@@ -207,8 +216,8 @@ const DashboardPage = () => {
       {activeTab === 'comparison' && (
         <NotesSection title="Note sul confronto tra anni" defaultOpen>
           <p>
-            Questa sezione confronterà i dati tra diversi anni per analizzare 
-            i trend di consumo e costi nel tempo.
+            Questa sezione mostra il report Power BI per il confronto tra diversi anni,
+            permettendo di analizzare i trend di consumo e costi nel tempo.
           </p>
         </NotesSection>
       )}
@@ -216,7 +225,7 @@ const DashboardPage = () => {
       {activeTab === 'breakdown' && (
         <NotesSection title="Note sulla suddivisione" defaultOpen>
           <p>
-            Questa sezione mostrerà la suddivisione dei consumi e dei costi
+            Questa sezione mostra il report Power BI per la suddivisione dei consumi e dei costi
             per categoria, fonte o altri parametri rilevanti.
           </p>
         </NotesSection>
@@ -225,7 +234,7 @@ const DashboardPage = () => {
       {activeTab === 'powerbi' && (
         <NotesSection title="Note su Power BI" defaultOpen>
           <p>
-            Questa sezione integra i report di Power BI con dati avanzati.
+            Questa sezione mostra il report Power BI completo con tutti i dettagli.
             Per visualizzare correttamente i report è necessario essere autenticati.
           </p>
         </NotesSection>
