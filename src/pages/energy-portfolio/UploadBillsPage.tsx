@@ -36,14 +36,15 @@ interface BillFile {
 // Definire l'interfaccia per i POD
 interface Pod {
     id: string;
-    // Altre proprietà del POD che potrebbero essere presenti nell'API
-    name?: string;
-    address?: string;
-    potenzaImpegnata?: string;
-    tensione?: string;
-    tipoFornitura?: string;
-    consumoAnnuo?: string;
-    dataAttivazione?: string;
+    potenzaImpegnata: string;
+    potenzaDisponibile: string;
+    tensione: string;
+    tipoTensione: string;
+    fornitore: string;
+    sede?: string;
+    nazione?: string;
+    cap?: string;
+    tensioneAlimentazione?: string;
 }
 
 // Componente personalizzato per l'upload dei file
