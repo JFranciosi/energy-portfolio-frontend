@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
