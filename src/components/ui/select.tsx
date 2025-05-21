@@ -112,12 +112,10 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName
 
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
-    value?: string;  // Make value optional in our type definition
-  }
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, value = "", ...props }, ref) => {
-  // Ensure value is never an empty string
-  const safeValue = value || props.value || `item-${Math.random().toString(36).substring(2, 9)}`;
+  // Generate a random string if value is empty
+  const safeValue = value === "" ? `item-${Math.random().toString(36).substring(2, 9)}` : value;
   
   return (
     <SelectPrimitive.Item
