@@ -1,13 +1,134 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
 import { DataFilters } from '@/components/energy-portfolio/DataFilters';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
-import { Card } from '@/components/ui/card';
-import { AreaChart, BarChart, LineChart, PieChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Line, Bar, Pie, Cell } from 'recharts';
-import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
+
+// Define the path for API calls
+const PATH = "http://localhost:8081"; // Adjust based on your actual API path
 
 const DashboardPage = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('consumption');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch data when component mounts
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          handleProxyArticoli(),
+          handleProxyPod(),
+          handleProxyBollette()
+        ]);
+        toast({
+          title: "Dati caricati con successo",
+          description: "Tutti i dati sono stati aggiornati",
+          variant: "default",
+        });
+      } catch (error) {
+        toast({
+          title: "Errore nel caricamento dei dati",
+          description: "Si è verificato un errore durante il recupero dei dati",
+          variant: "destructive",
+        });
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
+
+  const handleProxyArticoli = async () => {
+    try {
+      const response = await fetch(`${PATH}/proxy/articoli`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        console.log("Proxy articoli chiamato con successo");
+      } else {
+        console.log("Errore durante la chiamata al proxy articoli: " + response.status);
+      }
+
+      const data = await response.json();
+
+      if (data) {
+        console.log("Dati articoli ricevuti:", data);
+      } else {
+        console.log("Nessun dato articoli ricevuto: ", data);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Errore durante la chiamata al proxy articoli:", error);
+      throw error;
+    }
+  }
+
+  const handleProxyPod = async () => {
+    try {
+      const response = await fetch(`${PATH}/proxy/pod`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        console.log("Proxy pod chiamato con successo");
+      } else {
+        console.log("Errore durante la chiamata al proxy pod: " + response.status);
+      }
+
+      const data = await response.json();
+
+      if (data) {
+        console.log("Dati pod ricevuti:", data);
+      } else {
+        console.log("Nessun dato pod ricevuto: ", data);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Errore durante la chiamata al proxy pod:", error);
+      throw error;
+    }
+  }
+
+  const handleProxyBollette = async () => {
+    try {
+      const response = await fetch(`${PATH}/proxy/bollette`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        console.log("Proxy bollette chiamato con successo");
+      } else {
+        console.log("Errore durante la chiamata al proxy bollette: " + response.status);
+      }
+
+      const data = await response.json();
+
+      if (data) {
+        console.log("Dati bollette ricevuti:", data);
+      } else {
+        console.log("Nessun dato bollette ricevuto: ", data);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Errore durante la chiamata al proxy bollette:", error);
+      throw error;
+    }
+  }
 
   const dashboardTabs = [
     { id: 'consumption', label: 'Consumi' },
@@ -17,194 +138,6 @@ const DashboardPage = () => {
     { id: 'powerbi', label: 'Power BI' },
   ];
 
-  // Mock data for charts
-  const consumptionData = [
-    { month: 'Gen', value: 2400 },
-    { month: 'Feb', value: 1398 },
-    { month: 'Mar', value: 2800 },
-    { month: 'Apr', value: 3908 },
-    { month: 'Mag', value: 4800 },
-    { month: 'Giu', value: 3800 },
-    { month: 'Lug', value: 4300 },
-  ];
-
-  const costsData = [
-    { month: 'Gen', value: 1240 },
-    { month: 'Feb', value: 898 },
-    { month: 'Mar', value: 1400 },
-    { month: 'Apr', value: 1908 },
-    { month: 'Mag', value: 2200 },
-    { month: 'Giu', value: 1800 },
-    { month: 'Lug', value: 2100 },
-  ];
-
-  const comparisonData = [
-    { month: 'Gen', '2024': 4000, '2025': 2400 },
-    { month: 'Feb', '2024': 3000, '2025': 1398 },
-    { month: 'Mar', '2024': 2000, '2025': 2800 },
-    { month: 'Apr', '2024': 2780, '2025': 3908 },
-    { month: 'Mag', '2024': 4890, '2025': 4800 },
-    { month: 'Giu', '2024': 3390, '2025': 3800 },
-    { month: 'Lug', '2024': 3490, '2025': 4300 },
-  ];
-
-  const breakdownData = [
-    { name: 'Uffici', value: 45 },
-    { name: 'Produzione', value: 30 },
-    { name: 'Magazzino', value: 15 },
-    { name: 'Illuminazione', value: 10 },
-  ];
-
-  const renderChart = () => {
-    switch (activeTab) {
-      case 'consumption':
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={consumptionData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#2563eb" 
-                fillOpacity={0.2} 
-                fill="#2563eb" 
-                name="kWh"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        );
-        
-      case 'costs':
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={costsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#2563eb" 
-                strokeWidth={2} 
-                dot={{ stroke: '#2563eb', strokeWidth: 2, r: 4, fill: '#fff' }} 
-                name="€"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        );
-        
-      case 'comparison':
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={comparisonData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip />
-              <Bar dataKey="2024" fill="#94a3b8" name="2024" />
-              <Bar dataKey="2025" fill="#2563eb" name="2025" />
-            </BarChart>
-          </ResponsiveContainer>
-        );
-        
-      case 'breakdown':
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <PieChart>
-              <Tooltip />
-              <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }} height={300}>
-                <Pie 
-                  data={breakdownData} 
-                  dataKey="value" 
-                  nameKey="name" 
-                  cx="50%" 
-                  cy="50%"
-                  outerRadius={120} 
-                  fill="#2563eb"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {breakdownData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={`hsl(${210 + index * 15}, 80%, ${60 - index * 5}%)`} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </PieChart>
-          </ResponsiveContainer>
-        );
-        
-      case 'powerbi':
-        return (
-          <div className="flex items-center justify-center border border-primary/30 rounded-lg h-[400px] bg-gradient-to-br from-white to-blue-50 dark:from-card dark:to-blue-950/10">
-            <div className="text-center p-8">
-              <h3 className="text-xl font-semibold text-primary mb-2">Power BI Integration</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Questa sezione integra i report di Power BI. 
-                Contatta l'amministratore per configurare l'integrazione.
-              </p>
-            </div>
-          </div>
-        );
-        
-      default:
-        return null;
-    }
-  };
-  
-  // Dynamic notes based on active tab
-  const getNotes = () => {
-    switch (activeTab) {
-      case 'consumption':
-        return (
-          <NotesSection title="Note sui consumi" defaultOpen>
-            <p>
-              Il grafico mostra i consumi energetici in kWh per il periodo selezionato. 
-              I picchi possono corrispondere a periodi di maggiore attività produttiva o 
-              condizioni climatiche estreme che richiedono maggior utilizzo di sistemi HVAC.
-            </p>
-          </NotesSection>
-        );
-        
-      case 'costs':
-        return (
-          <NotesSection title="Note sui costi" defaultOpen>
-            <p>
-              Il grafico rappresenta i costi energetici in Euro per il periodo selezionato.
-              I costi non includono IVA e altre imposte. 
-              L'andamento può differire dai consumi a causa di variazioni nelle tariffe.
-            </p>
-          </NotesSection>
-        );
-        
-      case 'comparison':
-        return (
-          <NotesSection title="Note sul confronto anni" defaultOpen>
-            <p>
-              Questo grafico confronta i consumi dell'anno corrente con quelli dell'anno precedente.
-              Un valore inferiore indica un miglioramento nell'efficienza energetica.
-            </p>
-          </NotesSection>
-        );
-        
-      case 'breakdown':
-        return (
-          <NotesSection title="Note sulla suddivisione" defaultOpen>
-            <p>
-              Il grafico mostra la suddivisione percentuale dei consumi per area funzionale.
-              Questa informazione è utile per identificare le aree dove concentrare gli interventi 
-              di efficientamento energetico.
-            </p>
-          </NotesSection>
-        );
-        
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold text-primary mb-2">Dashboard Energetica</h1>
@@ -212,7 +145,7 @@ const DashboardPage = () => {
         Visualizza e analizza i tuoi consumi energetici
       </p>
       
-      {/* Secondary Navbar */}
+      {/* Secondary Navbar for tab switching */}
       <SecondaryNavbar 
         items={dashboardTabs}
         activeItemId={activeTab}
@@ -225,13 +158,78 @@ const DashboardPage = () => {
         onExport={() => console.log('Exporting data...')}
       />
       
-      {/* Chart Area */}
+      {/* Chart Area - Content changes based on active tab */}
       <Card className="mb-6 p-6">
-        {renderChart()}
+        <CardContent className={`${isLoading ? 'opacity-50' : ''} min-h-[400px] flex items-center justify-center`}>
+          {isLoading ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p>Caricamento dati...</p>
+            </div>
+          ) : (
+            <div className="w-full h-[400px] flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+              <div className="text-center p-8">
+                <h3 className="text-xl font-semibold mb-2">
+                  {activeTab === 'consumption' && "Grafico Consumi"}
+                  {activeTab === 'costs' && "Grafico Costi"}
+                  {activeTab === 'comparison' && "Grafico Confronto Anni"}
+                  {activeTab === 'breakdown' && "Grafico Suddivisione"}
+                  {activeTab === 'powerbi' && "Report Power BI"}
+                </h3>
+                <p className="text-muted-foreground">
+                  Area riservata per il grafico Power BI - {dashboardTabs.find(tab => tab.id === activeTab)?.label}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
       </Card>
       
-      {/* Notes */}
-      {getNotes()}
+      {/* Dynamic Notes Section based on active tab */}
+      {activeTab === 'consumption' && (
+        <NotesSection title="Note sui consumi" defaultOpen>
+          <p>
+            Questa sezione mostrerà grafici relativi ai consumi energetici. 
+            I dati vengono caricati all'apertura della pagina tramite le API.
+          </p>
+        </NotesSection>
+      )}
+      
+      {activeTab === 'costs' && (
+        <NotesSection title="Note sui costi" defaultOpen>
+          <p>
+            Questa sezione mostrerà grafici relativi ai costi energetici.
+            È possibile filtrare i dati usando i controlli sopra il grafico.
+          </p>
+        </NotesSection>
+      )}
+      
+      {activeTab === 'comparison' && (
+        <NotesSection title="Note sul confronto tra anni" defaultOpen>
+          <p>
+            Questa sezione confronterà i dati tra diversi anni per analizzare 
+            i trend di consumo e costi nel tempo.
+          </p>
+        </NotesSection>
+      )}
+      
+      {activeTab === 'breakdown' && (
+        <NotesSection title="Note sulla suddivisione" defaultOpen>
+          <p>
+            Questa sezione mostrerà la suddivisione dei consumi e dei costi
+            per categoria, fonte o altri parametri rilevanti.
+          </p>
+        </NotesSection>
+      )}
+      
+      {activeTab === 'powerbi' && (
+        <NotesSection title="Note su Power BI" defaultOpen>
+          <p>
+            Questa sezione integra i report di Power BI con dati avanzati.
+            Per visualizzare correttamente i report è necessario essere autenticati.
+          </p>
+        </NotesSection>
+      )}
     </div>
   );
 };

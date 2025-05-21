@@ -16,6 +16,7 @@ import EnergyPortfolioPage from "./pages/energy-portfolio/EnergyPortfolioPage";
 import UploadBillsPage from "./pages/energy-portfolio/UploadBillsPage";
 import FuturesPage from "./pages/energy-portfolio/FuturesPage";
 import CostsPage from "./pages/energy-portfolio/CostsPage";
+import DashboardPage from "./pages/energy-portfolio/DashboardPage";
 import CreateUserPage from "./pages/admin/CreateUserPage.tsx";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/energy-portfolio/upload" element={<Layout><UploadBillsPage /></Layout>} />
             <Route path="/energy-portfolio/futures" element={<Layout><FuturesPage /></Layout>} />
             <Route path="/energy-portfolio/costs" element={<Layout><CostsPage /></Layout>} />
+            <Route path="/energy-portfolio/dashboard" element={<Layout><DashboardPage /></Layout>} />
             <Route path="/energy-portfolio/create-user" element={<Layout><CreateUserPage /></Layout>} />
             <Route path="/admin/costi" element={<Layout><CostiPage /></Layout>} />
             
