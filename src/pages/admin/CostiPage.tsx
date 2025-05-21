@@ -79,18 +79,29 @@ const CostiPage = () => {
       if (response.ok) {
         const responseData = await response.json();
         console.log("Dati ricevuti:", responseData);
-        setData(responseData);
         
-        // Calcola il numero totale di pagine
-        const totalItems = responseData.length || 0; // Questo dovrebbe essere regolato in base alla tua API
-        setTotalPages(Math.ceil(totalItems / size) || 1);
+        // Verifica che responseData sia un array
+        if (Array.isArray(responseData)) {
+          setData(responseData);
+          
+          // Calcola il numero totale di pagine
+          const totalItems = responseData.length || 0;
+          setTotalPages(Math.ceil(totalItems / size) || 1);
+        } else {
+          console.error('La risposta non è un array:', responseData);
+          setData([]);
+          setError("La risposta dell'API non è nel formato atteso (array)");
+          toast.error("Errore nel formato dei dati ricevuti");
+        }
       } else {
         console.error('Errore durante il fetch:', response.statusText);
+        setData([]);
         setError(`Errore del server: ${response.status} ${response.statusText}`);
         toast.error("Errore nel caricamento dei costi");
       }
     } catch (error) {
       console.error('Errore durante il fetch dei costi filtrati:', error);
+      setData([]);
       setError("Impossibile connettersi al server. Verifica che il server API sia in esecuzione su http://localhost:8081");
       toast.error("Errore di connessione");
     } finally {
