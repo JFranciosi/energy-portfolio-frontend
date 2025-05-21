@@ -1,8 +1,7 @@
-
-import React, { useState, useEffect } from 'react';
-import { FileUploader } from '@/components/energy-portfolio/FileUploader';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, {useState, useEffect} from 'react';
+import {FileUploader} from '@/components/energy-portfolio/FileUploader';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import {
@@ -20,9 +19,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Switch } from "@/components/ui/switch";
-import { Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import {Switch} from "@/components/ui/switch";
+import {Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database} from 'lucide-react';
+import {Label} from '@/components/ui/label';
 
 // Definire l'interfaccia per i file delle bollette provenienti dall'API
 interface BillFile {
@@ -48,7 +47,7 @@ interface Pod {
 }
 
 // Componente personalizzato per l'upload dei file
-const FileUploadSection = ({ onFileUploadSuccess }) => {
+const FileUploadSection = ({onFileUploadSuccess}) => {
     const PATH_DEV = "http://localhost:8081";
     const [file, setFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -179,7 +178,7 @@ const FileUploadSection = ({ onFileUploadSuccess }) => {
                 onDrop={handleDrop}
             >
                 <div className="mb-4">
-                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground"/>
                 </div>
 
                 <h3 className="text-lg font-medium mb-2">
@@ -229,7 +228,7 @@ const FileUploadSection = ({ onFileUploadSuccess }) => {
                         >
                             {isLoading ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                                     Caricamento in corso...
                                 </>
                             ) : (
@@ -301,11 +300,10 @@ const UploadBillsPage = () => {
                 // Arricchisci i dati POD con dati di esempio se necessario
                 const enrichedPods = data.map(pod => ({
                     ...pod,
-                    potenzaImpegnata: pod.potenzaImpegnata || `${(Math.random() * 10 + 3).toFixed(1)} kW`,
-                    tensione: pod.tensione || 'BT',
-                    tipoFornitura: pod.tipoFornitura || (Math.random() > 0.5 ? 'Energia Elettrica' : 'Gas Naturale'),
-                    consumoAnnuo: pod.consumoAnnuo || `${Math.floor(Math.random() * 10000 + 1000)} kWh`,
-                    dataAttivazione: pod.dataAttivazione || new Date(Date.now() - Math.random() * 3 * 365 * 24 * 60 * 60 * 1000).toLocaleDateString('it-IT')
+                    potenzaImpegnata: pod.potenzaImpegnata,
+                    tensione: pod.tipoTensione,
+                    fornitore: pod.fornitore,
+                    potenzaDisponibile: pod.potenzaDisponibile,
                 }));
                 setPod(enrichedPods);
             } else {
@@ -365,7 +363,7 @@ const UploadBillsPage = () => {
     // Icona di ordinamento
     const sortIcon = (column: string) => {
         if (sortColumn !== column) return null;
-        return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+        return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4"/> : <ChevronDown className="h-4 w-4"/>;
     };
 
     // Funzione chiamata dopo un caricamento file con successo
@@ -411,7 +409,7 @@ const UploadBillsPage = () => {
                 {/* Upload Section - Solo quando si visualizzano le bollette */}
                 {viewMode === 'bills' && (
                     <div className="mb-8">
-                        <FileUploadSection onFileUploadSuccess={handleFileUploadSuccess} />
+                        <FileUploadSection onFileUploadSuccess={handleFileUploadSuccess}/>
                     </div>
                 )}
 
@@ -429,9 +427,9 @@ const UploadBillsPage = () => {
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                         {viewMode === 'bills' ? (
-                            <Upload className="mr-2 h-4 w-4" /> 
+                            <Upload className="mr-2 h-4 w-4"/>
                         ) : (
-                            <Database className="mr-2 h-4 w-4" />
+                            <Database className="mr-2 h-4 w-4"/>
                         )}
                         <span>
                             Modalità: <strong>{viewMode === 'bills' ? 'Bollette' : 'Dati POD'}</strong>
@@ -442,7 +440,7 @@ const UploadBillsPage = () => {
                 {/* Filter Controls - Adattati in base alla vista */}
                 <div className="flex flex-wrap gap-4 mb-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
                         <Input
                             placeholder={viewMode === 'bills' ? "Cerca bollette..." : "Cerca POD..."}
                             value={searchTerm}
@@ -456,7 +454,7 @@ const UploadBillsPage = () => {
                             onValueChange={setSelectedPod}
                         >
                             <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filtra per POD" />
+                                <SelectValue placeholder="Filtra per POD"/>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Tutti i POD</SelectItem>
@@ -519,7 +517,8 @@ const UploadBillsPage = () => {
                                         <TableRow key={bill.id}>
                                             <TableCell>
                                                 <div className="font-medium">{bill.fileName}</div>
-                                                {bill.size && <div className="text-xs text-muted-foreground">{bill.size}</div>}
+                                                {bill.size &&
+                                                    <div className="text-xs text-muted-foreground">{bill.size}</div>}
                                             </TableCell>
                                             <TableCell>{bill.uploadDate || 'N/A'}</TableCell>
                                             <TableCell>{bill.idPod}</TableCell>
@@ -529,7 +528,7 @@ const UploadBillsPage = () => {
                                                     size="icon"
                                                     onClick={() => downloadFile(bill.id, bill.fileName)}
                                                 >
-                                                    <Download className="h-4 w-4" />
+                                                    <Download className="h-4 w-4"/>
                                                     <span className="sr-only">Download</span>
                                                 </Button>
                                             </TableCell>
@@ -548,12 +547,14 @@ const UploadBillsPage = () => {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[150px]">ID POD</TableHead>
-                                    <TableHead>Tipo Fornitura</TableHead>
+                                    <TableHead>Fornitore</TableHead>
+                                    <TableHead>Potenza Disponibile</TableHead>
                                     <TableHead>Potenza (kW)</TableHead>
                                     <TableHead>Tensione</TableHead>
-                                    <TableHead>Consumo Annuo</TableHead>
-                                    <TableHead>Data Attivazione</TableHead>
+                                    <TableHead>Tensione di Alimentazione</TableHead>
                                     <TableHead>Indirizzo</TableHead>
+                                    <TableHead>Nazione</TableHead>
+                                    <TableHead>Cap</TableHead>
                                     <TableHead className="text-right">Azioni</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -574,12 +575,14 @@ const UploadBillsPage = () => {
                                     pod.filter(p => p.id.toLowerCase().includes(searchTerm.toLowerCase())).map((podItem) => (
                                         <TableRow key={podItem.id}>
                                             <TableCell className="font-medium">{podItem.id}</TableCell>
-                                            <TableCell>{podItem.tipoFornitura || 'N/A'}</TableCell>
+                                            <TableCell>{podItem.fornitore || 'N/A'}</TableCell>
+                                            <TableCell>{podItem.potenzaDisponibile || 'N/A'}</TableCell>
                                             <TableCell>{podItem.potenzaImpegnata || 'N/A'}</TableCell>
                                             <TableCell>{podItem.tensione || 'BT'}</TableCell>
-                                            <TableCell>{podItem.consumoAnnuo || 'N/A'}</TableCell>
-                                            <TableCell>{podItem.dataAttivazione || 'N/A'}</TableCell>
-                                            <TableCell>{podItem.address || 'N/A'}</TableCell>
+                                            <TableCell>{podItem.tensioneAlimentazione || 'BT'}</TableCell>
+                                            <TableCell>{podItem.sede || 'N/A'}</TableCell>
+                                            <TableCell>{podItem.nazione || 'N/A'}</TableCell>
+                                            <TableCell>{podItem.cap || 'N/A'}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button
                                                     variant="ghost"
@@ -590,12 +593,14 @@ const UploadBillsPage = () => {
                                                             html: `
                                                                 <div class="text-left">
                                                                     <p><strong>ID POD:</strong> ${podItem.id}</p>
-                                                                    <p><strong>Tipo:</strong> ${podItem.tipoFornitura || 'N/A'}</p>
-                                                                    <p><strong>Potenza:</strong> ${podItem.potenzaImpegnata || 'N/A'}</p>
+                                                                    <p><strong>Fornitore:</strong> ${podItem.fornitore || 'N/A'}</p>
+                                                                    <p><strong>Potenza Disponibile:</strong> ${podItem.potenzaDisponibile || 'N/A'}</p>
+                                                                    <p><strong>Potenza Impegnata:</strong> ${podItem.potenzaImpegnata || 'N/A'}</p>
                                                                     <p><strong>Tensione:</strong> ${podItem.tensione || 'BT'}</p>
-                                                                    <p><strong>Consumo:</strong> ${podItem.consumoAnnuo || 'N/A'}</p>
-                                                                    <p><strong>Attivazione:</strong> ${podItem.dataAttivazione || 'N/A'}</p>
-                                                                    <p><strong>Indirizzo:</strong> ${podItem.address || 'N/A'}</p>
+                                                                    <p><strong>Tensione di Alimentazione:</strong> ${podItem.tensioneAlimentazione || 'BT'}</p>
+                                                                    <p><strong>Sede:</strong> ${podItem.sede || 'N/A'}</p>
+                                                                    <p><strong>Nazione:</strong> ${podItem.nazione || 'N/A'}</p>
+                                                                    <p><strong>CAP:</strong> ${podItem.cap || 'N/A'}</p>
                                                                 </div>
                                                             `,
                                                             confirmButtonText: 'Chiudi',
