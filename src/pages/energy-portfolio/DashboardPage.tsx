@@ -97,14 +97,21 @@ const DashboardPage = () => {
     // Fetch data when component mounts
     let isMounted = true;
     
-    const fetchData = async () => {
+    // Modified to run API calls sequentially instead of in parallel
+    const fetchDataSequentially = async () => {
       setIsLoading(true);
       try {
-        await Promise.allSettled([
-          handleProxyArticoli(),
-          handleProxyPod(),
-          handleProxyBollette()
-        ]);
+        // Run API calls one after another
+        console.log("Fetching articles data...");
+        await handleProxyArticoli();
+        
+        if (!isMounted) return;
+        console.log("Fetching POD data...");
+        await handleProxyPod();
+        
+        if (!isMounted) return;
+        console.log("Fetching bill data...");
+        await handleProxyBollette();
         
         if (isMounted) {
           setDataLoaded(true);
@@ -128,7 +135,7 @@ const DashboardPage = () => {
       }
     };
 
-    fetchData();
+    fetchDataSequentially();
     
     return () => {
       isMounted = false;
@@ -142,19 +149,16 @@ const DashboardPage = () => {
         return energyportfolio.reports.home.reportId;
       case 'controllo':
         return energyportfolio.reports.controllo.reportId;
-      case 'vuota':
-        return ""; // Empty tab, no report to display
       // For other tabs, default to home report
       default:
         return energyportfolio.reports.home.reportId;
     }
   };
 
-  // Updated tabs to only show the three requested sections
+  // Updated tabs to only show two sections (removed "vuota")
   const dashboardTabs = [
     { id: 'home', label: 'Home' },
     { id: 'controllo', label: 'Controllo' },
-    { id: 'vuota', label: 'Vuota' },
   ];
 
   return (
@@ -186,19 +190,10 @@ const DashboardPage = () => {
               <p>Caricamento dati...</p>
             </div>
           ) : (
-            <>
-              {/* Power BI Report display */}
-              {activeTab !== 'vuota' ? (
-                <PowerBIReport 
-                  reportId={getReportIdForTab(activeTab)} 
-                  className="w-full h-[500px]" 
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[500px] w-full">
-                  <p className="text-muted-foreground text-lg">Nessun report da visualizzare</p>
-                </div>
-              )}
-            </>
+            <PowerBIReport 
+              reportId={getReportIdForTab(activeTab)} 
+              className="w-full h-[500px]" 
+            />
           )}
         </CardContent>
       </Card>
@@ -218,14 +213,6 @@ const DashboardPage = () => {
           <p>
             Questa sezione mostra il report Power BI dedicato al controllo dei consumi.
             È possibile filtrare i dati usando i controlli sopra il grafico.
-          </p>
-        </NotesSection>
-      )}
-      
-      {activeTab === 'vuota' && (
-        <NotesSection title="Sezione vuota" defaultOpen>
-          <p>
-            Questa sezione è attualmente vuota e può essere utilizzata per future implementazioni.
           </p>
         </NotesSection>
       )}
