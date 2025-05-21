@@ -1,4 +1,3 @@
-
 import React, {useState, useEffect} from 'react';
 import {FileUploader} from '@/components/energy-portfolio/FileUploader';
 import {Button} from '@/components/ui/button';
@@ -35,13 +34,13 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/hooks/use-toast";
 
 // Definire l'interfaccia per i file delle bollette provenienti dall'API
 interface BillFile {
     id: string;
     fileName: string;
     idPod: string;
-    // Altre proprietà che potrebbero essere presenti nei dati API
     uploadDate?: string;
     size?: string;
 }
@@ -85,6 +84,9 @@ const costiSchema = z.object({
 // Componente per il form dei costi
 const CostiForm = () => {
     const PATH_DEV = "http://localhost:8081";
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(false);
+    
     const form = useForm<CostiState>({
         resolver: zodResolver(costiSchema),
         defaultValues: {
@@ -98,23 +100,93 @@ const CostiForm = () => {
         },
     });
 
-    const onSubmit = async (data: CostiState) => {
+    // Carica i dati dei costi all'avvio del componente
+    useEffect(() => {
+        fetchCostiCliente();
+    }, []);
+
+    const fetchCostiCliente = async () => {
+        setLoading(true);
         try {
+            const response = await fetch(`${PATH_DEV}/cliente/costi-energia`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Costi fetch:", data);
+
+                // Definisci lo stato iniziale con tutti i costi a 0
+                const costiState = {
+                    f0: 0,
+                    f1: 0,
+                    f2: 0,
+                    f3: 0,
+                    f1_perdite: 0,
+                    f2_perdite: 0,
+                    f3_perdite: 0,
+                };
+
+                // Se la risposta è un array di oggetti, mappa ciascun oggetto al valore corrispondente
+                data.forEach((item) => {
+                    const key = item.nomeCosto;
+                    if (key in costiState) {
+                        costiState[key] = item.costoEuro;
+                    }
+                });
+
+                // Imposta i valori del form con i dati ricevuti
+                Object.entries(costiState).forEach(([key, value]) => {
+                    form.setValue(key as keyof CostiState, value);
+                });
+            } else {
+                console.error("Errore nella fetch dei costi cliente");
+                toast({
+                    title: "Errore",
+                    description: "Impossibile caricare i dati dei costi energetici",
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error("Errore nella fetch:", error);
+            toast({
+                title: "Errore",
+                description: "Si è verificato un errore durante il caricamento dei dati",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onSubmit = async (formData: CostiState) => {
+        setLoading(true);
+        try {
+            // Converti i dati del form in un array di oggetti come richiesto dall'API
+            const costiArray = Object.entries(formData).map(([key, value]) => ({
+                nomeCosto: key,
+                costoEuro: value,
+            }));
+
+            console.log("Invio costiArray:", costiArray);
+
             // Invia i dati al server
-            const response = await fetch(`${PATH_DEV}/costi`, {
+            const response = await fetch(`${PATH_DEV}/cliente/costi-energia/add`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(costiArray),
             });
 
             if (response.ok) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Successo',
-                    text: 'Costi salvati con successo'
+                const data = await response.json();
+                console.log("Dati inviati correttamente:", data);
+                toast({
+                    title: "Successo",
+                    description: "I costi energetici sono stati salvati con successo",
                 });
             } else {
                 const errorText = await response.text();
@@ -122,11 +194,13 @@ const CostiForm = () => {
             }
         } catch (error) {
             console.error('Errore:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Errore',
-                text: error instanceof Error ? error.message : 'Errore durante il salvataggio dei costi'
+            toast({
+                title: "Errore",
+                description: error instanceof Error ? error.message : 'Errore durante il salvataggio dei costi',
+                variant: "destructive"
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -254,9 +328,22 @@ const CostiForm = () => {
                     />
                 </div>
 
-                <Button type="submit" className="mt-6">
-                    Salva Costi
+                <Button type="submit" className="mt-6" disabled={loading}>
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvataggio in corso...
+                        </>
+                    ) : (
+                        "Salva Costi"
+                    )}
                 </Button>
+                
+                {loading && (
+                    <div className="text-sm text-muted-foreground mt-2">
+                        Comunicazione con il server in corso...
+                    </div>
+                )}
             </form>
         </Form>
     );
