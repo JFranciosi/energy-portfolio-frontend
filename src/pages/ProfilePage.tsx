@@ -19,12 +19,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Activity, Bell, Lock, User } from 'lucide-react';
 
 const ProfilePage = () => {
-  const recentActivities = [
-    { type: 'Login', date: '14 maggio 2025, 09:45', device: 'Chrome, Windows' },
-    { type: 'Modifica profilo', date: '12 maggio 2025, 14:23', device: 'Safari, macOS' },
-    { type: 'Download report', date: '10 maggio 2025, 11:05', device: 'Firefox, Windows' },
-    { type: 'Cambio password', date: '5 maggio 2025, 16:30', device: 'Chrome, Android' }
-  ];
 
   // Create form instance for notifications tab
   const notificationsForm = useForm({
@@ -253,29 +247,6 @@ const ProfilePage = () => {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader className="flex flex-row items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Attività recenti
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-start justify-between border-b pb-4 last:border-0">
-                <div>
-                  <p className="font-medium">{activity.type}</p>
-                  <p className="text-sm text-muted-foreground">{activity.device}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">{activity.date}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
