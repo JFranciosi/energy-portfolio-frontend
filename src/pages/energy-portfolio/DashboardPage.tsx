@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
 import { DataFilters } from '@/components/energy-portfolio/DataFilters';
@@ -13,38 +14,20 @@ const DashboardPage = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  useEffect(() => {
-    // Fetch data when component mounts
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([
-          handleProxyArticoli(),
-          handleProxyPod(),
-          handleProxyBollette()
-        ]);
-        toast({
-          title: "Dati caricati con successo",
-          description: "Tutti i dati sono stati aggiornati",
-          variant: "default",
-        });
-      } catch (error) {
-        toast({
-          title: "Errore nel caricamento dei dati",
-          description: "Si è verificato un errore durante il recupero dei dati",
-          variant: "destructive",
-        });
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
+  // Funzione per gestire l'errore nelle chiamate API
+  const handleApiError = useCallback((error: unknown, context: string) => {
+    console.error(`Error in ${context}:`, error);
+    toast({
+      title: `Errore in ${context}`,
+      description: "Si è verificato un errore durante il recupero dei dati",
+      variant: "destructive",
+    });
   }, [toast]);
 
-  const handleProxyArticoli = async () => {
+  // Chiamate API ottimizzate
+  const handleProxyArticoli = useCallback(async () => {
     try {
       const response = await fetch(`${PATH}/proxy/articoli`, {
         method: "GET",
@@ -58,21 +41,15 @@ const DashboardPage = () => {
       }
 
       const data = await response.json();
-
-      if (data) {
-        console.log("Dati articoli ricevuti:", data);
-      } else {
-        console.log("Nessun dato articoli ricevuto: ", data);
-      }
-      
+      console.log("Dati articoli ricevuti:", data ? "disponibili" : "nessun dato");      
       return data;
     } catch (error) {
-      console.error("Errore durante la chiamata al proxy articoli:", error);
-      throw error;
+      handleApiError(error, "proxy articoli");
+      return null;
     }
-  }
+  }, [handleApiError]);
 
-  const handleProxyPod = async () => {
+  const handleProxyPod = useCallback(async () => {
     try {
       const response = await fetch(`${PATH}/proxy/pod`, {
         method: "GET",
@@ -86,21 +63,15 @@ const DashboardPage = () => {
       }
 
       const data = await response.json();
-
-      if (data) {
-        console.log("Dati pod ricevuti:", data);
-      } else {
-        console.log("Nessun dato pod ricevuto: ", data);
-      }
-      
+      console.log("Dati pod ricevuti:", data ? "disponibili" : "nessun dato");      
       return data;
     } catch (error) {
-      console.error("Errore durante la chiamata al proxy pod:", error);
-      throw error;
+      handleApiError(error, "proxy pod");
+      return null;
     }
-  }
+  }, [handleApiError]);
 
-  const handleProxyBollette = async () => {
+  const handleProxyBollette = useCallback(async () => {
     try {
       const response = await fetch(`${PATH}/proxy/bollette`, {
         method: "GET",
@@ -114,19 +85,55 @@ const DashboardPage = () => {
       }
 
       const data = await response.json();
-
-      if (data) {
-        console.log("Dati bollette ricevuti:", data);
-      } else {
-        console.log("Nessun dato bollette ricevuto: ", data);
-      }
-      
+      console.log("Dati bollette ricevuti:", data ? "disponibili" : "nessun dato");      
       return data;
     } catch (error) {
-      console.error("Errore durante la chiamata al proxy bollette:", error);
-      throw error;
+      handleApiError(error, "proxy bollette");
+      return null;
     }
-  }
+  }, [handleApiError]);
+
+  useEffect(() => {
+    // Fetch data when component mounts
+    let isMounted = true;
+    
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.allSettled([
+          handleProxyArticoli(),
+          handleProxyPod(),
+          handleProxyBollette()
+        ]);
+        
+        if (isMounted) {
+          setDataLoaded(true);
+          setIsLoading(false);
+          toast({
+            title: "Dati caricati con successo",
+            description: "Tutti i dati sono stati aggiornati",
+            variant: "default",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        if (isMounted) {
+          setIsLoading(false);
+          toast({
+            title: "Errore nel caricamento dei dati",
+            description: "Si è verificato un errore durante il recupero dei dati",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    fetchData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [toast, handleProxyArticoli, handleProxyPod, handleProxyBollette]);
 
   // Map tabs to reportIds from the energyportfolio config
   const getReportIdForTab = (tabId: string) => {

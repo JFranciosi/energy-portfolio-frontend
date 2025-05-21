@@ -40,9 +40,25 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
   const PATH = "http://localhost:8081"; // Same as used in DashboardPage
 
   useEffect(() => {
+    let isMounted = true; // Add a flag to track component mount state
+    let reportInstance: PowerBIReport | null = null;
+    
     const loadReport = async () => {
+      if (!reportId) {
+        if (isMounted) {
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         console.log("Loading report with ID:", reportId);
+
+        // Reset any previous errors
+        if (isMounted) {
+          setError(null);
+          setLoading(true);
+        }
 
         // Get the token and embed URL from the API
         const response = await fetch(`${PATH}/api/pbitoken/embed?reportId=${reportId}`, {
@@ -52,6 +68,8 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           },
           credentials: "include"
         });
+
+        if (!isMounted) return; // Check if component is still mounted
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -71,83 +89,105 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           powerbiService.current.reset(reportRef.current);
         }
 
-        if (reportRef.current) {
-          // Initialize Power BI service
+        if (!reportRef.current || !isMounted) return; // Check if ref and component are available
+
+        // Initialize Power BI service
+        if (!powerbiService.current) {
           powerbiService.current = new pbi.service.Service(
             pbi.factories.hpmFactory,
             pbi.factories.wpmpFactory,
             pbi.factories.routerFactory
           );
+        }
 
-          // Configure embedding with settings optimized to fill available space
-          const embedConfig: pbi.IEmbedConfiguration = {
-            type: 'report',
-            id: reportId,
-            embedUrl: data.embedUrl,
-            accessToken: data.token,
-            tokenType: pbi.models.TokenType.Embed,
-            settings: {
-              panes: {
-                filters: { visible: false },
-                pageNavigation: { visible: false }
-              },
-              background: pbi.models.BackgroundType.Transparent,
-              layoutType: pbi.models.LayoutType.Custom,
-              customLayout: {
-                displayOption: pbi.models.DisplayOption.FitToWidth
-              }
+        // Configure embedding with settings optimized to fill available space
+        const embedConfig: pbi.IEmbedConfiguration = {
+          type: 'report',
+          id: reportId,
+          embedUrl: data.embedUrl,
+          accessToken: data.token,
+          tokenType: pbi.models.TokenType.Embed,
+          settings: {
+            panes: {
+              filters: { visible: false },
+              pageNavigation: { visible: false }
+            },
+            background: pbi.models.BackgroundType.Transparent,
+            layoutType: pbi.models.LayoutType.Custom,
+            customLayout: {
+              displayOption: pbi.models.DisplayOption.FitToWidth
             }
-          };
+          }
+        };
 
-          console.log("Embedding with config");
+        console.log("Embedding with config");
 
-          // Perform embedding
-          const report = powerbiService.current.embed(reportRef.current, embedConfig) as PowerBIReport;
+        // Perform embedding
+        reportInstance = powerbiService.current.embed(reportRef.current, embedConfig) as PowerBIReport;
 
-          // Handle events
-          const loadedHandler: PowerBIEventHandler = () => {
-            console.log("Report loaded successfully");
+        // Handle events
+        const loadedHandler: PowerBIEventHandler = () => {
+          console.log("Report loaded successfully");
+          if (isMounted) {
             setLoading(false);
+          }
 
-            // Set display mode to automatically adapt
-            report.updateSettings({
+          // Set display mode to automatically adapt
+          if (reportInstance) {
+            reportInstance.updateSettings({
               layoutType: pbi.models.LayoutType.Custom,
               customLayout: {
                 displayOption: pbi.models.DisplayOption.FitToWidth
               }
             }).catch((err: Error) => console.error("Error updating report settings:", err));
-          };
+          }
+        };
 
-          const errorHandler: PowerBIEventHandler = (event) => {
-            console.error("Power BI Report error:", event?.detail);
+        const errorHandler: PowerBIEventHandler = (event) => {
+          const eventDetail = event?.detail ? String(event.detail) : "Unknown error";
+          console.error("Power BI Report error:", eventDetail);
+          if (isMounted) {
             setError("Si è verificato un errore durante il caricamento del report. Riprova più tardi.");
             setLoading(false);
-          };
+          }
+        };
 
-          report.on('loaded', loadedHandler);
-          report.on('error', errorHandler);
+        reportInstance.on('loaded', loadedHandler);
+        reportInstance.on('error', errorHandler);
 
-          // Cleanup when the component is unmounted
-          return () => {
-            report.off('loaded', loadedHandler);
-            report.off('error', errorHandler);
-            if (powerbiService.current && reportRef.current) {
-              powerbiService.current.reset(reportRef.current);
-            }
-          };
-        }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error("Error loading report:", error);
-        setError(`Si è verificato un errore durante il caricamento del report: ${errorMessage}`);
-        setLoading(false);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (isMounted) {
+          setError(`Si è verificato un errore durante il caricamento del report: ${errorMessage}`);
+          setLoading(false);
+        }
       }
     };
 
-    if (reportId) {
-      loadReport();
-    }
+    loadReport();
+
+    // Cleanup when the component is unmounted
+    return () => {
+      isMounted = false;
+      if (reportInstance) {
+        reportInstance.off('loaded');
+        reportInstance.off('error');
+      }
+      if (powerbiService.current && reportRef.current) {
+        try {
+          powerbiService.current.reset(reportRef.current);
+        } catch (e) {
+          console.error("Error during PowerBI cleanup:", e);
+        }
+      }
+    };
   }, [reportId, PATH]);
+
+  // If reportId is empty, don't render the report container
+  if (!reportId) {
+    return null;
+  }
 
   return (
     <div className={className}>
@@ -165,6 +205,7 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
       <div
         ref={reportRef}
         className="w-full h-full min-h-[400px]"
+        style={{ display: loading ? 'none' : 'block' }}
       ></div>
     </div>
   );
