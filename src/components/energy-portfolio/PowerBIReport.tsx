@@ -25,11 +25,16 @@ interface PowerBIReportProps {
   className?: string;
 }
 
+// Define proper types for the PowerBI service and events
+type PowerBIService = pbi.service.Service;
+type PowerBIReport = pbi.Report;
+type PowerBIEventHandler = (event?: pbi.service.ICustomEvent<any>) => void;
+
 const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const powerbiService = useRef<any>(null);
+  const powerbiService = useRef<PowerBIService | null>(null);
   
   // Define the path for API calls
   const PATH = "http://localhost:8081"; // Same as used in DashboardPage
@@ -75,7 +80,7 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           );
 
           // Configure embedding with settings optimized to fill available space
-          const embedConfig = {
+          const embedConfig: pbi.IEmbedConfiguration = {
             type: 'report',
             id: reportId,
             embedUrl: data.embedUrl,
@@ -97,10 +102,10 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           console.log("Embedding with config");
 
           // Perform embedding
-          const report = powerbiService.current.embed(reportRef.current, embedConfig);
+          const report = powerbiService.current.embed(reportRef.current, embedConfig) as PowerBIReport;
 
           // Handle events
-          report.on('loaded', function () {
+          const loadedHandler: PowerBIEventHandler = () => {
             console.log("Report loaded successfully");
             setLoading(false);
 
@@ -110,27 +115,31 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
               customLayout: {
                 displayOption: pbi.models.DisplayOption.FitToWidth
               }
-            }).catch((err: any) => console.error("Error updating report settings:", err));
-          });
+            }).catch((err: Error) => console.error("Error updating report settings:", err));
+          };
 
-          report.on('error', function (event: any) {
-            console.error("Power BI Report error:", event.detail);
+          const errorHandler: PowerBIEventHandler = (event) => {
+            console.error("Power BI Report error:", event?.detail);
             setError("Si è verificato un errore durante il caricamento del report. Riprova più tardi.");
             setLoading(false);
-          });
+          };
+
+          report.on('loaded', loadedHandler);
+          report.on('error', errorHandler);
 
           // Cleanup when the component is unmounted
           return () => {
-            report.off('loaded');
-            report.off('error');
+            report.off('loaded', loadedHandler);
+            report.off('error', errorHandler);
             if (powerbiService.current && reportRef.current) {
               powerbiService.current.reset(reportRef.current);
             }
           };
         }
-      } catch (error: any) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error("Error loading report:", error);
-        setError(`Si è verificato un errore durante il caricamento del report: ${error.message}`);
+        setError(`Si è verificato un errore durante il caricamento del report: ${errorMessage}`);
         setLoading(false);
       }
     };

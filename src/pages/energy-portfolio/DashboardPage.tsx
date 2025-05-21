@@ -1,8 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
 import { DataFilters } from '@/components/energy-portfolio/DataFilters';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
@@ -14,7 +11,7 @@ const PATH = "http://localhost:8081"; // Adjust based on your actual API path
 
 const DashboardPage = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('consumption');
+  const [activeTab, setActiveTab] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -134,24 +131,23 @@ const DashboardPage = () => {
   // Map tabs to reportIds from the energyportfolio config
   const getReportIdForTab = (tabId: string) => {
     switch (tabId) {
-      case 'consumption':
+      case 'home':
         return energyportfolio.reports.home.reportId;
-      case 'costs':
+      case 'controllo':
         return energyportfolio.reports.controllo.reportId;
-      case 'comparison':
-        return energyportfolio.reports.past.reportId;
+      case 'vuota':
+        return ""; // Empty tab, no report to display
       // For other tabs, default to home report
       default:
         return energyportfolio.reports.home.reportId;
     }
   };
 
+  // Updated tabs to only show the three requested sections
   const dashboardTabs = [
-    { id: 'consumption', label: 'Consumi' },
-    { id: 'costs', label: 'Costi' },
-    { id: 'comparison', label: 'Confronto Anni' },
-    { id: 'breakdown', label: 'Suddivisione' },
-    { id: 'powerbi', label: 'Power BI' },
+    { id: 'home', label: 'Home' },
+    { id: 'controllo', label: 'Controllo' },
+    { id: 'vuota', label: 'Vuota' },
   ];
 
   return (
@@ -185,57 +181,44 @@ const DashboardPage = () => {
           ) : (
             <>
               {/* Power BI Report display */}
-              <PowerBIReport 
-                reportId={getReportIdForTab(activeTab)} 
-                className="w-full h-[500px]" 
-              />
+              {activeTab !== 'vuota' ? (
+                <PowerBIReport 
+                  reportId={getReportIdForTab(activeTab)} 
+                  className="w-full h-[500px]" 
+                />
+              ) : (
+                <div className="flex items-center justify-center h-[500px] w-full">
+                  <p className="text-muted-foreground text-lg">Nessun report da visualizzare</p>
+                </div>
+              )}
             </>
           )}
         </CardContent>
       </Card>
       
       {/* Dynamic Notes Section based on active tab */}
-      {activeTab === 'consumption' && (
-        <NotesSection title="Note sui consumi" defaultOpen>
+      {activeTab === 'home' && (
+        <NotesSection title="Note sulla Home" defaultOpen>
           <p>
-            Questa sezione mostra il report Power BI sui consumi energetici.
+            Questa sezione mostra il report Power BI principale con una panoramica dei dati.
             I dati vengono caricati automaticamente all'apertura della pagina.
           </p>
         </NotesSection>
       )}
       
-      {activeTab === 'costs' && (
-        <NotesSection title="Note sui costi" defaultOpen>
+      {activeTab === 'controllo' && (
+        <NotesSection title="Note sul Controllo" defaultOpen>
           <p>
-            Questa sezione mostra il report Power BI sui costi energetici.
+            Questa sezione mostra il report Power BI dedicato al controllo dei consumi.
             È possibile filtrare i dati usando i controlli sopra il grafico.
           </p>
         </NotesSection>
       )}
       
-      {activeTab === 'comparison' && (
-        <NotesSection title="Note sul confronto tra anni" defaultOpen>
+      {activeTab === 'vuota' && (
+        <NotesSection title="Sezione vuota" defaultOpen>
           <p>
-            Questa sezione mostra il report Power BI per il confronto tra diversi anni,
-            permettendo di analizzare i trend di consumo e costi nel tempo.
-          </p>
-        </NotesSection>
-      )}
-      
-      {activeTab === 'breakdown' && (
-        <NotesSection title="Note sulla suddivisione" defaultOpen>
-          <p>
-            Questa sezione mostra il report Power BI per la suddivisione dei consumi e dei costi
-            per categoria, fonte o altri parametri rilevanti.
-          </p>
-        </NotesSection>
-      )}
-      
-      {activeTab === 'powerbi' && (
-        <NotesSection title="Note su Power BI" defaultOpen>
-          <p>
-            Questa sezione mostra il report Power BI completo con tutti i dettagli.
-            Per visualizzare correttamente i report è necessario essere autenticati.
+            Questa sezione è attualmente vuota e può essere utilizzata per future implementazioni.
           </p>
         </NotesSection>
       )}
