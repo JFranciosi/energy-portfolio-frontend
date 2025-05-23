@@ -137,7 +137,7 @@ const FuturesPage = () => {
         return (
             <PowerBIReport
                 reportId={reportId}
-                className="w-full h-[500px]"
+                className="w-full h-[800px]"
             />
         );
       }
