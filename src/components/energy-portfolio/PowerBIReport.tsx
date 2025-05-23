@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import * as pbi from "powerbi-client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +18,16 @@ export const energyportfolio = {
     past: {
       reportId: "f9f7a1d8-32e8-4b04-9cb8-9f83c0e25858",
     },
+    // New futures reports
+    futures: {
+      reportId: "b97739f8-e8cc-42e6-895b-74757f3613a8",
+    },
+    futuresAnalysis: {
+      reportId: "77bc07c1-bdb0-4c1f-aaf6-1eedcc2be1b6",
+    },
+    pastEnergyData: {
+      reportId: "24a05787-ca23-4a91-9ae6-ac5d25b237d9",
+    },
   },
 };
 
@@ -38,37 +47,37 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
   const [error, setError] = useState<string | null>(null);
   const powerbiService = useRef<PowerBIService | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Define the path for API calls
   const PATH = "http://localhost:8081"; // Same as used in DashboardPage
 
   // Toggle fullscreen function
   const toggleFullscreen = () => {
     if (!reportRef.current) return;
-    
+
     if (!isFullscreen) {
       if (reportRef.current.requestFullscreen) {
         reportRef.current.requestFullscreen()
-          .then(() => setIsFullscreen(true))
-          .catch((err) => console.error("Could not enter fullscreen mode:", err));
+            .then(() => setIsFullscreen(true))
+            .catch((err) => console.error("Could not enter fullscreen mode:", err));
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen()
-          .then(() => setIsFullscreen(false))
-          .catch((err) => console.error("Could not exit fullscreen mode:", err));
+            .then(() => setIsFullscreen(false))
+            .catch((err) => console.error("Could not exit fullscreen mode:", err));
       }
     }
   };
-  
+
   // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-    
+
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
@@ -77,7 +86,7 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
   useEffect(() => {
     let isMounted = true; // Add a flag to track component mount state
     let reportInstance: PowerBIReport | null = null;
-    
+
     const loadReport = async () => {
       if (!reportId) {
         if (isMounted) {
@@ -129,9 +138,9 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
         // Initialize Power BI service
         if (!powerbiService.current) {
           powerbiService.current = new pbi.service.Service(
-            pbi.factories.hpmFactory,
-            pbi.factories.wpmpFactory,
-            pbi.factories.routerFactory
+              pbi.factories.hpmFactory,
+              pbi.factories.wpmpFactory,
+              pbi.factories.routerFactory
           );
         }
 
@@ -225,44 +234,44 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
   }
 
   return (
-    <div className={className}>
-      <div className="flex justify-end mb-2">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={toggleFullscreen}
-          className="z-10"
-          title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
-        >
-          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-        </Button>
+      <div className={className}>
+        <div className="flex justify-end mb-2">
+          <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleFullscreen}
+              className="z-10"
+              title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {loading && (
+            <div className="flex flex-col items-center justify-center h-full w-full p-8">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
+              <p>Caricamento report...</p>
+            </div>
+        )}
+        {error && (
+            <div className="flex flex-col items-center justify-center h-full w-full p-8">
+              <p className="text-destructive">{error}</p>
+            </div>
+        )}
+        <div
+            ref={reportRef}
+            className="w-full h-full min-h-[400px]"
+            style={{
+              display: loading ? 'none' : 'block',
+              position: isFullscreen ? 'fixed' : 'relative',
+              top: isFullscreen ? '0' : 'auto',
+              left: isFullscreen ? '0' : 'auto',
+              right: isFullscreen ? '0' : 'auto',
+              bottom: isFullscreen ? '0' : 'auto',
+              zIndex: isFullscreen ? 9999 : 'auto',
+            }}
+        ></div>
       </div>
-      
-      {loading && (
-        <div className="flex flex-col items-center justify-center h-full w-full p-8">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
-          <p>Caricamento report...</p>
-        </div>
-      )}
-      {error && (
-        <div className="flex flex-col items-center justify-center h-full w-full p-8">
-          <p className="text-destructive">{error}</p>
-        </div>
-      )}
-      <div
-        ref={reportRef}
-        className="w-full h-full min-h-[400px]"
-        style={{ 
-          display: loading ? 'none' : 'block',
-          position: isFullscreen ? 'fixed' : 'relative',
-          top: isFullscreen ? '0' : 'auto',
-          left: isFullscreen ? '0' : 'auto',
-          right: isFullscreen ? '0' : 'auto',
-          bottom: isFullscreen ? '0' : 'auto',
-          zIndex: isFullscreen ? 9999 : 'auto',
-        }}
-      ></div>
-    </div>
   );
 };
 
