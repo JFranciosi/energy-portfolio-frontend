@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
-import { DataFilters } from '@/components/energy-portfolio/DataFilters';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -1041,13 +1040,7 @@ const FuturesPage = () => {
               activeItemId={activeTab}
               onItemClick={setActiveTab}
           />
-
-          {/* Filters */}
-          <DataFilters
-              className="mb-6"
-              onExport={() => console.log('Exporting data...')}
-          />
-
+          
           {/* Chart Area - Only show if not on alerts tab */}
           {activeTab !== 'alerts' && (
               <Card className="mb-6 p-6">

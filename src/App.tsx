@@ -24,6 +24,7 @@ import CookiePolicyPage from "./pages/legal/CookiePolicyPage";
 import GdprRequestPage from "./pages/legal/GdprRequestPage";
 import { CookieBanner } from "./components/legal/CookieBanner";
 import CostiPage from "./pages/admin/CostiPage.tsx";
+import BudgetPage from "@/pages/energy-portfolio/BudgetPage";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/energy-portfolio/dashboard" element={<Layout><DashboardPage /></Layout>} />
             <Route path="/energy-portfolio/create-user" element={<Layout><CreateUserPage /></Layout>} />
             <Route path="/admin/costi" element={<Layout><CostiPage /></Layout>} />
+            <Route path="/budget" element={<Layout><BudgetPage /></Layout>} />
             
             {/* Legal Routes */}
             <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />

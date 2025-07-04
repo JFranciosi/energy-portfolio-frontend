@@ -72,74 +72,19 @@ const EnergyPortfolioPage = () => {
           }
           className="bg-gradient-to-br from-white to-blue-50 dark:from-card dark:to-blue-950/10"
         />
-      </div>
 
-      {/* Recent Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-medium">Ultima bolletta</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Data</dt>
-                <dd className="text-sm font-medium">{recentStats.lastBill.date}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Importo</dt>
-                <dd className="text-sm font-medium">{recentStats.lastBill.amount}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Consumo</dt>
-                <dd className="text-sm font-medium">{recentStats.lastBill.consumption}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-medium">Ultimo mese</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Consumo totale</dt>
-                <dd className="text-sm font-medium">{recentStats.lastMonth.consumption}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Costo totale</dt>
-                <dd className="text-sm font-medium">{recentStats.lastMonth.cost}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-medium">Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <LineChart className="h-10 w-10 text-primary mr-3" />
-              <div>
-                <div className="flex items-center">
-                  <span className={cn(
-                    "text-lg font-bold",
-                    recentStats.trend.percentage < 0 ? "text-green-500" : "text-red-500"
-                  )}>
-                    {recentStats.trend.percentage < 0 ? "" : "+"}
-                    {recentStats.trend.percentage}%
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {recentStats.trend.description}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <PortfolioCard
+          icon={BarChart3}
+          title="Budget"
+          description="Visualizza grafici dettagliati e analisi dei tuoi consumi energetici nel tempo."
+          onClick={() => navigate('/budget')}
+          footerContent={
+            <PortfolioCardAction>
+              Budget <ArrowRight className="ml-2 h-4 w-4" />
+            </PortfolioCardAction>
+          }
+          className="bg-gradient-to-br from-white to-blue-50 dark:from-card dark:to-blue-950/10"
+        />
       </div>
     </div>
   );

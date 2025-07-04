@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface NavItem {
+export interface NavItem {
   id: string;
   label: string;
 }

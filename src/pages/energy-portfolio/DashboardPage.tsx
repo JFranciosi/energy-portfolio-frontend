@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
-import { DataFilters } from '@/components/energy-portfolio/DataFilters';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
 import { useToast } from '@/components/ui/use-toast';
 import PowerBIReport, { energyportfolio } from '@/components/energy-portfolio/PowerBIReport';
@@ -240,12 +239,6 @@ const DashboardPage = () => {
             items={dashboardTabs}
             activeItemId={activeTab}
             onItemClick={setActiveTab}
-        />
-
-        {/* Filters */}
-        <DataFilters
-            className="mb-6"
-            onExport={() => console.log('Exporting data...')}
         />
 
         {/* Chart Area with Power BI Reports */}

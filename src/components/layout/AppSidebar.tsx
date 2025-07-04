@@ -1,4 +1,3 @@
-
 import React, {useEffect, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {
@@ -89,6 +88,7 @@ export const AppSidebar = () => {
         }
     };
 
+    // Effettuiamo i controlli al montaggio del componente
     useEffect(() => {
         checkAccesso();
         checkCategoria();
@@ -126,7 +126,7 @@ export const AppSidebar = () => {
             </SidebarHeader>
 
             <SidebarContent className="overflow-y-auto">
-                {/* Login/Logout Buttons */}
+                {/* Sezione Login/Logout */}
                 <SidebarMenu className="mb-4">
                     {!accessoEffettuato &&
                         <SidebarMenuItem>
@@ -145,6 +145,7 @@ export const AppSidebar = () => {
                     }
                 </SidebarMenu>
 
+                {/* Gruppo Menu principale */}
                 <SidebarGroup>
                     <SidebarGroupLabel>Menu</SidebarGroupLabel>
                     <SidebarGroupContent>
@@ -165,14 +166,13 @@ export const AppSidebar = () => {
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
-                                ))
-                            }
+                                ))}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
 
-            {/* Alternativa: pulsante di logout nel footer */}
+            {/* Footer con pulsante di logout */}
             {accessoEffettuato && (
                 <SidebarFooter className="border-t py-2">
                     <div className="px-3">
