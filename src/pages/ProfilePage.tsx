@@ -69,6 +69,7 @@ interface EditableFieldProps {
   onSave: (fieldKey: keyof UserData, value: any) => void;
   type?: string;
   isLoading?: boolean;
+  disableEdit?: boolean; // NUOVA PROP per disabilitare il bottone edit
 }
 
 const EditableField: React.FC<EditableFieldProps> = ({
@@ -77,7 +78,8 @@ const EditableField: React.FC<EditableFieldProps> = ({
                                                        fieldKey,
                                                        onSave,
                                                        type = 'text',
-                                                       isLoading = false
+                                                       isLoading = false,
+                                                       disableEdit = false,
                                                      }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [fieldValue, setFieldValue] = useState(value);
@@ -130,7 +132,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
               type="button"
               onClick={() => setIsEditing(true)}
               className="shrink-0"
-              disabled={isLoading}
+              disabled={isLoading || disableEdit} // disabilita se la prop disableEdit è true
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -482,6 +484,7 @@ const ProfilePage = () => {
                         fieldKey="tipologia"
                         onSave={handleSaveField}
                         isLoading={isSubmitting}
+                        disableEdit={true} // disabilita modifica tipologia
                     />
                   </div>
 

@@ -112,6 +112,12 @@ export const AppSidebar = () => {
             icon: DollarSign,
             visible: accessoEffettuato && categoriaUtente === 'Admin'
         },
+        {
+            title: 'Gestione Utenti',
+            path: '/user-management',
+            icon: User,
+            visible: accessoEffettuato && categoriaUtente === 'Admin'
+        },
         {title: 'Profilo', path: '/profile', icon: User, visible: accessoEffettuato},
     ];
 
