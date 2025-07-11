@@ -189,7 +189,7 @@ const BudgetCard: React.FC<{
 };
 
 const BudgetPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabId>("budget");
+  const [activeTab, setActiveTab] = useState<TabId>("pbi");
   const [podOptions, setPodOptions] = useState<PodInfo[]>([]);
   const [pod, setPod] = useState<PodInfo | null>(null);
   const [anno, setAnno] = useState(2025);

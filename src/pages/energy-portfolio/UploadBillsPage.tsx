@@ -1,7 +1,6 @@
-import React, {useState, useEffect} from 'react';
-import {FileUploader} from '@/components/energy-portfolio/FileUploader';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import {
@@ -19,9 +18,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {Switch} from "@/components/ui/switch";
-import {Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database, FileText} from 'lucide-react';
-import {Label} from '@/components/ui/label';
+import { Switch } from "@/components/ui/switch";
+import { Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database, FileText } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import {
     Form,
     FormControl,
@@ -36,7 +35,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 
-// Definire l'interfaccia per i file delle bollette provenienti dall'API
+// INTERFACCE E COSTANTI
 interface BillFile {
     id: string;
     fileName: string;
@@ -44,8 +43,6 @@ interface BillFile {
     uploadDate?: string;
     size?: string;
 }
-
-// Definire l'interfaccia per i POD
 interface Pod {
     id: string;
     potenzaImpegnata: string;
@@ -58,8 +55,6 @@ interface Pod {
     cap?: string;
     tensioneAlimentazione?: string;
 }
-
-// Interfaccia per i dati dei costi
 interface CostiState {
     f0: number;
     f1: number;
@@ -69,8 +64,6 @@ interface CostiState {
     f2_perdite: number;
     f3_perdite: number;
 }
-
-// Schema di validazione per i campi dei costi
 const costiSchema = z.object({
     f0: z.coerce.number().min(0, "Il valore deve essere positivo"),
     f1: z.coerce.number().min(0, "Il valore deve essere positivo"),
@@ -81,12 +74,11 @@ const costiSchema = z.object({
     f3_perdite: z.coerce.number().min(0, "Il valore deve essere positivo"),
 });
 
-// Componente per il form dei costi
+// FORM COSTI (INVARIATO)
 const CostiForm = () => {
     const PATH_DEV = "http://localhost:8081";
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
-    
     const form = useForm<CostiState>({
         resolver: zodResolver(costiSchema),
         defaultValues: {
@@ -99,246 +91,80 @@ const CostiForm = () => {
             f3_perdite: 0,
         },
     });
-
-    // Carica i dati dei costi all'avvio del componente
-    useEffect(() => {
-        fetchCostiCliente();
-    }, []);
-
+    useEffect(() => { fetchCostiCliente(); }, []);
     const fetchCostiCliente = async () => {
         setLoading(true);
         try {
             const response = await fetch(`${PATH_DEV}/cliente/costi-energia`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {'Content-Type': 'application/json'},
+                method: 'GET', credentials: 'include', headers: {'Content-Type': 'application/json'},
             });
             if (response.ok) {
                 const data = await response.json();
-                console.log("Costi fetch:", data);
-
-                // Definisci lo stato iniziale con tutti i costi a 0
-                const costiState = {
-                    f0: 0,
-                    f1: 0,
-                    f2: 0,
-                    f3: 0,
-                    f1_perdite: 0,
-                    f2_perdite: 0,
-                    f3_perdite: 0,
-                };
-
-                // Se la risposta è un array di oggetti, mappa ciascun oggetto al valore corrispondente
+                const costiState = {f0: 0,f1: 0,f2: 0,f3: 0,f1_perdite: 0,f2_perdite: 0,f3_perdite: 0};
                 data.forEach((item) => {
                     const key = item.nomeCosto;
-                    if (key in costiState) {
-                        costiState[key] = item.costoEuro;
-                    }
+                    if (key in costiState) costiState[key] = item.costoEuro;
                 });
-
-                // Imposta i valori del form con i dati ricevuti
                 Object.entries(costiState).forEach(([key, value]) => {
                     form.setValue(key as keyof CostiState, value);
                 });
             } else {
-                console.error("Errore nella fetch dei costi cliente");
-                toast({
-                    title: "Errore",
-                    description: "Impossibile caricare i dati dei costi energetici",
-                    variant: "destructive"
-                });
+                toast({title: "Errore", description: "Impossibile caricare i dati dei costi energetici", variant: "destructive"});
             }
         } catch (error) {
-            console.error("Errore nella fetch:", error);
-            toast({
-                title: "Errore",
-                description: "Si è verificato un errore durante il caricamento dei dati",
-                variant: "destructive"
-            });
+            toast({title: "Errore", description: "Si è verificato un errore durante il caricamento dei dati", variant: "destructive"});
         } finally {
             setLoading(false);
         }
     };
-
     const onSubmit = async (formData: CostiState) => {
         setLoading(true);
         try {
-            // Converti i dati del form in un array di oggetti come richiesto dall'API
             const costiArray = Object.entries(formData).map(([key, value]) => ({
-                nomeCosto: key,
-                costoEuro: value,
+                nomeCosto: key, costoEuro: value,
             }));
-
-            console.log("Invio costiArray:", costiArray);
-
-            // Invia i dati al server
             const response = await fetch(`${PATH_DEV}/cliente/costi-energia/add`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                method: 'POST', credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(costiArray),
             });
-
             if (response.ok) {
-                const data = await response.json();
-                console.log("Dati inviati correttamente:", data);
-                toast({
-                    title: "Successo",
-                    description: "I costi energetici sono stati salvati con successo",
-                });
+                toast({title: "Successo", description: "I costi energetici sono stati salvati con successo"});
             } else {
                 const errorText = await response.text();
                 throw new Error(errorText || 'Errore durante il salvataggio dei costi');
             }
         } catch (error) {
-            console.error('Errore:', error);
-            toast({
-                title: "Errore",
-                description: error instanceof Error ? error.message : 'Errore durante il salvataggio dei costi',
-                variant: "destructive"
-            });
+            toast({title: "Errore", description: error instanceof Error ? error.message : 'Errore durante il salvataggio dei costi', variant: "destructive"});
         } finally {
             setLoading(false);
         }
     };
-
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <FormField
-                        control={form.control}
-                        name="f0"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F0 (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia unica
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="f1"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F1 (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia 1 (8:00-19:00 lun-ven)
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="f2"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F2 (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia 2 (7:00-8:00 e 19:00-23:00 lun-ven, 7:00-23:00 sab)
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="f3"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F3 (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia 3 (23:00-7:00 lun-sab, tutto dom e festivi)
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="f1_perdite"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F1 Perdite (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia 1 con perdite
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="f2_perdite"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F2 Perdite (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia 2 con perdite
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="f3_perdite"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>F3 Perdite (€/kWh)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    Fascia 3 con perdite
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    {/* campi costi */}
+                    {["f0", "f1", "f2", "f3", "f1_perdite", "f2_perdite", "f3_perdite"].map(name => (
+                        <FormField
+                            key={name}
+                            control={form.control}
+                            name={name as keyof CostiState}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{name.replace('_', ' ').toUpperCase()} (€/kWh)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" step="0.0001" placeholder="0.0000" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    ))}
                 </div>
-
                 <Button type="submit" className="mt-6" disabled={loading}>
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Salvataggio in corso...
-                        </>
-                    ) : (
-                        "Salva Costi"
-                    )}
+                    {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvataggio in corso...</>) : ("Salva Costi")}
                 </Button>
-                
                 {loading && (
                     <div className="text-sm text-muted-foreground mt-2">
                         Comunicazione con il server in corso...
@@ -349,206 +175,132 @@ const CostiForm = () => {
     );
 };
 
-// Componente personalizzato per l'upload dei file
-const FileUploadSection = ({onFileUploadSuccess}) => {
+// CARICAMENTO MULTIPLO FILE
+const FileUploadSection = ({ onFileUploadSuccess, filesUploaded }) => {
     const PATH_DEV = "http://localhost:8081";
-    const [file, setFile] = useState<File | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [dragActive, setDragActive] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
+    // HANDLER SELEZIONE MULTIPLA
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0] || null;
-
-        if (selectedFile) {
-            // Verifica che sia un file PDF
-            if (!selectedFile.type.includes('pdf')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Formato file non supportato',
-                    text: 'Carica solo file in formato PDF'
-                });
-                return;
-            }
-
-            setFile(selectedFile);
-        }
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-
-        const droppedFile = e.dataTransfer.files?.[0] || null;
-
-        if (droppedFile) {
-            // Verifica che sia un file PDF
-            if (!droppedFile.type.includes('pdf')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Formato file non supportato',
-                    text: 'Carica solo file in formato PDF'
-                });
-                return;
-            }
-
-            setFile(droppedFile);
-        }
-    };
-
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-
-        // Se non è stato selezionato alcun file, mostra un alert
-        if (!file) {
-            await Swal.fire({
+        let filesArr = Array.from(e.target.files || []);
+        filesArr = filesArr.filter(f => f.type === "application/pdf");
+        if (selectedFiles.length + filesArr.length > 12 - filesUploaded) {
+            Swal.fire({
                 icon: 'error',
-                title: 'Errore',
-                text: 'Seleziona un file da caricare'
+                title: 'Troppi file selezionati',
+                text: 'Puoi caricare al massimo 12 file totali.'
             });
             return;
         }
+        setSelectedFiles(prev => [...prev, ...filesArr].slice(0, 12 - filesUploaded));
+    };
 
-        // Imposta lo state di loading
+    const handleRemove = (index: number) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // UPLOAD TUTTI I FILE SELEZIONATI
+    const handleUploadAll = async () => {
         setIsLoading(true);
+        setCurrentIndex(0);
 
-        const formData = new FormData();
-        formData.append('fileName', file.name);
-        formData.append('fileData', file);
+        let allOk = true;
+        for (let i = 0; i < selectedFiles.length; i++) {
+            setCurrentIndex(i);
+            const formData = new FormData();
+            formData.append('fileName', selectedFiles[i].name);
+            formData.append('fileData', selectedFiles[i]);
 
-        try {
-            // Effettua la richiesta al server
-            const response = await fetch(`${PATH_DEV}/files/upload`, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-            });
-
-            const responseText = await response.text();
-
-            if (response.ok) {
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Successo',
-                    text: responseText || 'File caricato e processato con successo.'
+            try {
+                const response = await fetch(`${PATH_DEV}/files/upload-multiplo`, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
                 });
-
-                // Reset del file
-                setFile(null);
-
-                // Notifica il componente padre che il caricamento è avvenuto con successo
-                onFileUploadSuccess();
-            } else {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Errore',
-                    text: responseText || 'Errore durante il caricamento del file.'
-                });
+                const responseText = await response.text();
+                if (!response.ok) {
+                    Swal.fire({ icon: 'error', title: 'Errore', text: responseText || 'Errore durante il caricamento di ' + selectedFiles[i].name });
+                    allOk = false;
+                    break;
+                }
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'Errore', text: 'Errore di rete su ' + selectedFiles[i].name });
+                allOk = false;
+                break;
             }
-        } catch (error) {
-            console.error("Errore nella richiesta:", error);
-            await Swal.fire({
-                icon: 'error',
-                title: 'Errore',
-                text: 'Si è verificato un errore imprevisto. Riprova più tardi.'
-            });
-        } finally {
-            // Al termine della richiesta, reinizializza lo state di loading
-            setIsLoading(false);
         }
+        setSelectedFiles([]);
+        setIsLoading(false);
+        setCurrentIndex(0);
+        if (selectedFiles.length > 0 && allOk)
+            Swal.fire({ icon: 'success', title: 'Upload completato', text: 'Tutti i file sono stati caricati.' });
+
+        // AGGIORNAMENTO UNICO DOPO TUTTI GLI UPLOAD: sia files che pod!
+        onFileUploadSuccess();
     };
 
     return (
         <div className="w-full">
-            <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                    dragActive ? "border-primary bg-primary/5" : "border-gray-300"
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
+            <div className={`border-2 border-dashed rounded-lg p-6 text-center`}>
                 <div className="mb-4">
                     <Upload className="mx-auto h-12 w-12 text-muted-foreground"/>
                 </div>
-
-                <h3 className="text-lg font-medium mb-2">
-                    Carica la tua bolletta energetica
-                </h3>
-
-                <p className="text-sm text-muted-foreground mb-4">
-                    Trascina qui il tuo file PDF o clicca per selezionarlo
-                </p>
-
-                <p className="text-xs text-muted-foreground mb-4">
-                    Formati supportati: PDF
-                </p>
-
+                <h3 className="text-lg font-medium mb-2">Carica le tue bollette energetiche</h3>
+                <p className="text-sm text-muted-foreground mb-4">Trascina o seleziona fino a 12 file PDF</p>
                 <input
                     type="file"
                     id="file-upload"
                     accept=".pdf"
+                    multiple
                     onChange={handleChange}
                     className="hidden"
+                    disabled={isLoading || filesUploaded >= 12}
                 />
-
-                <div className="space-y-3">
-                    <Button
-                        variant="outline"
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                        disabled={isLoading}
-                    >
-                        Seleziona file
-                    </Button>
-
-                    {file && (
-                        <div className="mt-4 p-3 bg-muted rounded-md">
-                            <p className="text-sm font-medium">File selezionato:</p>
-                            <p className="text-sm">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {(file.size / (1024 * 1024)).toFixed(2)} MB
-                            </p>
-                        </div>
-                    )}
-
-                    {file && (
+                <Button
+                    variant="outline"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    disabled={isLoading || filesUploaded >= 12}
+                >
+                    Seleziona file
+                </Button>
+                {/* LISTA FILE */}
+                {selectedFiles.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                        {selectedFiles.map((file, i) => (
+                            <div key={i} className="flex justify-between items-center bg-muted rounded px-3 py-1 text-sm">
+                                <span>{file.name}</span>
+                                <Button variant="ghost" size="icon" onClick={() => handleRemove(i)} disabled={isLoading}>
+                                    ✕
+                                </Button>
+                            </div>
+                        ))}
                         <Button
-                            className="mt-4 w-full"
-                            onClick={handleSubmit}
+                            className="mt-2 w-full"
+                            onClick={handleUploadAll}
                             disabled={isLoading}
                         >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                                    Caricamento in corso...
-                                </>
-                            ) : (
-                                "Carica file"
-                            )}
+                            {isLoading
+                                ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Caricamento {currentIndex + 1}/{selectedFiles.length}...</>)
+                                : "Carica tutti"}
                         </Button>
-                    )}
+                    </div>
+                )}
+                {/* BLOCCHI INFORMATIVI */}
+                <div className="text-xs text-muted-foreground mt-2">
+                    {filesUploaded >= 12
+                        ? "Hai raggiunto il limite di 12 bollette."
+                        : selectedFiles.length === 0 && "Non hai ancora selezionato nessun file."}
                 </div>
             </div>
         </div>
     );
 };
 
+// --- MAIN PAGE ---
 const UploadBillsPage = () => {
     const PATH_DEV = "http://localhost:8081";
-
-    // Stati
     const [data, setData] = useState<BillFile[]>([]);
     const [pod, setPod] = useState<Pod[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -556,40 +308,33 @@ const UploadBillsPage = () => {
     const [sortColumn, setSortColumn] = useState<string>('fileName');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'bills' | 'pods' | 'costs'>('bills'); // Aggiunto stato per la visualizzazione costs
+    const [viewMode, setViewMode] = useState<'bills' | 'pods' | 'costs'>('bills');
 
-    // Fetch dei dati all'avvio del componente
-    useEffect(() => {
-        getFiles();
-        getPod();
-    }, []);
+    useEffect(() => { getFiles(); getPod(); }, []);
 
-    // Funzione per ottenere i file delle bollette
     const getFiles = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch(`${PATH_DEV}/pod/bollette`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setData(data);
-            } else {
-                console.error('Errore durante il recupero delle bollette');
-            }
-        } catch (error) {
-            console.error('Errore durante la chiamata fetch:', error);
-        } finally {
-            setLoading(false);
+    setLoading(true);
+    try {
+        // NIENTE PIÙ SESSION COOKIE!
+        const response = await fetch(`${PATH_DEV}/files/dati`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+            const result = await response.json();
+            setData(result);
+            // Debug: stampa sempre quanti file ricevi!
+            console.log("FILES DAL BACKEND:", result);
+        } else {
+            setData([]);
         }
-    };
-
-    // Funzione per ottenere i POD
+    } catch (error) {
+        setData([]);
+    } finally {
+        setLoading(false);
+    }
+};
     const getPod = async () => {
         try {
             const response = await fetch(`${PATH_DEV}/pod`, {
@@ -597,18 +342,15 @@ const UploadBillsPage = () => {
                 method: 'GET',
                 headers: {'Content-Type': 'application/json'}
             });
-
             if (response.ok) {
                 const data = await response.json();
-                // Arricchisci i dati POD con dati di esempio se necessario
-                const enrichedPods = data.map(pod => ({
+                setPod(data.map(pod => ({
                     ...pod,
                     potenzaImpegnata: pod.potenzaImpegnata,
                     tensione: pod.tipoTensione,
                     fornitore: pod.fornitore,
                     potenzaDisponibile: pod.potenzaDisponibile,
-                }));
-                setPod(enrichedPods);
+                })));
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -616,89 +358,60 @@ const UploadBillsPage = () => {
                     text: 'Errore durante il recupero dei POD'
                 });
             }
-        } catch (error) {
-            console.error('Errore durante il recupero dei POD:', error);
-        }
+        } catch (error) { }
     };
-
-    // Funzione per scaricare un file
     const downloadFile = async (id: string, name: string) => {
         try {
             const response = await axios.get(`${PATH_DEV}/files/${id}/download`, {
                 responseType: 'blob',
             });
-
             const contentDisposition = response.headers['content-disposition'];
             const fileName = contentDisposition
                 ? contentDisposition.split('filename=')[1].replace(/"/g, '')
                 : name;
-
             const url = window.URL.createObjectURL(new Blob([response.data]));
-
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
-
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Error downloading file', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Errore',
-                text: 'Impossibile scaricare il file'
-            });
+            Swal.fire({ icon: 'error', title: 'Errore', text: 'Impossibile scaricare il file' });
         }
     };
 
-    // Gestione ordinamento
+    // Ordinamento
     const handleSort = (column: string) => {
-        if (sortColumn === column) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortColumn(column);
-            setSortDirection('asc');
-        }
+        if (sortColumn === column) setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        else { setSortColumn(column); setSortDirection('asc'); }
     };
-
-    // Icona di ordinamento
     const sortIcon = (column: string) => {
         if (sortColumn !== column) return null;
         return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4"/> : <ChevronDown className="h-4 w-4"/>;
     };
 
-    // Funzione chiamata dopo un caricamento file con successo
+    // AGGIORNA SIA I FILE CHE I POD DOPO OGNI UPLOAD
     const handleFileUploadSuccess = () => {
-        // Aggiorna la lista dei file
         getFiles();
+        getPod();
     };
 
-    // Filtraggio e ordinamento dei dati
+    // Filtraggio e ordinamento
     const filteredAndSortedData = data
         .filter(file => {
-            // Prima controlla se il POD selezionato corrisponde
             const podMatches = selectedPod === 'all' || file.idPod === selectedPod;
-
-            // Poi controlla se il termine di ricerca è presente nel nome file o nell'ID POD
             const searchMatches =
                 file.fileName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 file.idPod?.toLowerCase().includes(searchTerm.toLowerCase());
-
-            // Restituisce true solo se entrambe le condizioni sono soddisfatte
             return podMatches && searchMatches;
         })
         .sort((a, b) => {
-            // Ordinamento
             const aValue = a[sortColumn as keyof BillFile] || '';
             const bValue = b[sortColumn as keyof BillFile] || '';
-
-            if (sortDirection === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
+            if (sortDirection === 'asc') return aValue > bValue ? 1 : -1;
+            else return aValue < bValue ? 1 : -1;
         });
 
     return (
@@ -708,26 +421,43 @@ const UploadBillsPage = () => {
                 <p className="text-lg text-muted-foreground mb-8">
                     Carica e gestisci le tue bollette energetiche
                 </p>
-
-                {/* Upload Section - Solo quando si visualizzano le bollette */}
+                {/* UPLOAD MULTIPLO */}
                 {viewMode === 'bills' && (
                     <div className="mb-8">
-                        <FileUploadSection onFileUploadSuccess={handleFileUploadSuccess}/>
+                        <FileUploadSection onFileUploadSuccess={handleFileUploadSuccess} filesUploaded={filteredAndSortedData.length}/>
                     </div>
                 )}
+                {/* PROGRESS BAR */}
+                {viewMode === 'bills' && (
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-primary">
+                            Bollette caricate: {filteredAndSortedData.length} / 12
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                            {Math.round((filteredAndSortedData.length / 12) * 100)}%
+                        </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
+                        <div
+                            className="bg-primary h-3 rounded-full transition-all duration-500"
+                            style={{
+                                width: `${Math.min((filteredAndSortedData.length / 12) * 100, 100)}%`
+                            }}
+                        />
+                    </div>
+                </div>
+                )}
 
-                {/* View Toggle Switch */}
+                {/* VIEW SWITCH */}
                 <div className="flex items-center mb-6 space-x-4">
                     <div className="flex items-center space-x-2">
                         <Switch
                             id="view-mode-pods"
                             checked={viewMode === 'pods'}
                             onCheckedChange={(checked) => {
-                                if (checked) {
-                                    setViewMode('pods');
-                                } else if (viewMode === 'pods') {
-                                    setViewMode('bills');
-                                }
+                                if (checked) setViewMode('pods');
+                                else if (viewMode === 'pods') setViewMode('bills');
                             }}
                         />
                         <Label htmlFor="view-mode-pods">
@@ -739,11 +469,8 @@ const UploadBillsPage = () => {
                             id="view-mode-costs"
                             checked={viewMode === 'costs'}
                             onCheckedChange={(checked) => {
-                                if (checked) {
-                                    setViewMode('costs');
-                                } else if (viewMode === 'costs') {
-                                    setViewMode('bills');
-                                }
+                                if (checked) setViewMode('costs');
+                                else if (viewMode === 'costs') setViewMode('bills');
                             }}
                         />
                         <Label htmlFor="view-mode-costs">
@@ -770,7 +497,7 @@ const UploadBillsPage = () => {
                     </div>
                 </div>
 
-                {/* Filter Controls - Adattati in base alla vista */}
+                {/* FILTER */}
                 {viewMode !== 'costs' && (
                     <div className="flex flex-wrap gap-4 mb-4">
                         <div className="relative flex-1">
@@ -792,8 +519,8 @@ const UploadBillsPage = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">Tutti i POD</SelectItem>
-                                    {pod.map(p => (
-                                        <SelectItem key={p.id} value={p.id}>{p.id}</SelectItem>
+                                    {[...new Set(data.map(b => b.idPod))].map(podId => (
+                                        <SelectItem key={podId} value={podId}>{podId}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -801,7 +528,7 @@ const UploadBillsPage = () => {
                     </div>
                 )}
 
-                {/* Costs Form - Visibile solo quando viewMode è 'costs' */}
+                {/* COSTI */}
                 {viewMode === 'costs' && (
                     <div className="bg-card rounded-lg border p-6 shadow-sm">
                         <h2 className="text-xl font-semibold mb-4">Gestione Costi Energetici</h2>
@@ -809,7 +536,7 @@ const UploadBillsPage = () => {
                     </div>
                 )}
 
-                {/* Bills Table - Visibile solo quando viewMode è 'bills' */}
+                {/* TABELLA BOLLETTE */}
                 {viewMode === 'bills' && (
                     <div className="rounded-md border">
                         <Table>
@@ -883,7 +610,7 @@ const UploadBillsPage = () => {
                     </div>
                 )}
 
-                {/* PODs Table - Nuova tabella visibile solo quando viewMode è 'pods' */}
+                {/* TABELLA PODS */}
                 {viewMode === 'pods' && (
                     <div className="rounded-md border">
                         <Table>
@@ -947,9 +674,7 @@ const UploadBillsPage = () => {
                                                                 </div>
                                                             `,
                                                             confirmButtonText: 'Chiudi',
-                                                            customClass: {
-                                                                container: 'swal-wide'
-                                                            }
+                                                            customClass: {container: 'swal-wide'}
                                                         });
                                                     }}
                                                 >
