@@ -214,14 +214,18 @@ const FileUploadSection = ({ onFileUploadSuccess, filesUploaded }) => {
             formData.append('fileData', selectedFiles[i]);
 
             try {
-                const response = await fetch(`${PATH_DEV}/files/upload-multiplo`, {
+                const response = await fetch(`${PATH_DEV}/files/upload`, {
                     method: 'POST',
                     body: formData,
                     credentials: 'include'
                 });
                 const responseText = await response.text();
                 if (!response.ok) {
-                    Swal.fire({ icon: 'error', title: 'Errore', text: responseText || 'Errore durante il caricamento di ' + selectedFiles[i].name });
+                    Swal.fire({
+                    icon: 'error',
+                    title: 'Errore',
+                    text: 'Impossibile caricare il file perché è già presente a sistema'
+                    });
                     allOk = false;
                     break;
                 }
