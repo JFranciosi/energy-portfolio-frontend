@@ -7,6 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -41,6 +48,11 @@ interface UserData {
   checkEmail: boolean;
 }
 
+interface Option {
+  label: string;
+  value: string;
+}
+
 const fallbackUserData: UserData = {
   id: 6,
   username: "Alessio",
@@ -61,15 +73,31 @@ const fallbackUserData: UserData = {
   checkEmail: false
 };
 
+const countryOpts: Option[] = [
+  { label: "IT", value: "IT" },
+  { label: "RU", value: "RU" },
+  { label: "FR", value: "FR" },
+  { label: "ES", value: "ES" },
+];
+
+const agevolOpts: Option[] = [
+  { label: "No Agevolazioni", value: "No Agevolazioni" },
+  { label: "Fat1", value: "Fat1" },
+  { label: "Fat2", value: "Fat2" },
+  { label: "Fat3", value: "Fat3" },
+  { label: "Val",  value: "Val"  },
+];
+
 // Component for editable field
 interface EditableFieldProps {
   label: string;
   value: string | number;
   fieldKey: keyof UserData;
   onSave: (fieldKey: keyof UserData, value: any) => void;
-  type?: string;
+  type?: "text" | "email" | "number" | "tel";
   isLoading?: boolean;
   disableEdit?: boolean;
+  options?: Option[];   // <-- supporta anche select
 }
 
 const EditableField: React.FC<EditableFieldProps> = ({
@@ -80,6 +108,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
   type = 'text',
   isLoading = false,
   disableEdit = false,
+  options,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [fieldValue, setFieldValue] = useState(value);
@@ -97,13 +126,33 @@ const EditableField: React.FC<EditableFieldProps> = ({
     return (
       <div className="space-y-2">
         <Label htmlFor={String(fieldKey)}>{label}</Label>
-        <div className="flex gap-2">
-          <Input
-            id={String(fieldKey)}
-            type={type}
-            value={fieldValue}
-            onChange={(e) => setFieldValue(type === 'number' ? parseFloat(e.target.value) : e.target.value)}
-          />
+        <div className="flex gap-2 items-center">
+          {options ? (
+            <Select value={String(fieldValue)} onValueChange={setFieldValue}>
+              <SelectTrigger className="w-full h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={String(fieldKey)}
+              type={type}
+              value={fieldValue as any}
+              onChange={(e) =>
+                setFieldValue(
+                  type === "number" ? parseFloat(e.target.value) : e.target.value
+                )
+              }
+            />
+          )}
+
           <Button
             size="icon"
             type="button"
@@ -111,7 +160,11 @@ const EditableField: React.FC<EditableFieldProps> = ({
             className="shrink-0"
             disabled={isLoading}
           >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -434,11 +487,12 @@ const ProfilePage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <EditableField
-                        label="Stato"
+                        label="Paese"
                         value={userData.stato}
                         fieldKey="stato"
                         onSave={handleSaveField}
                         isLoading={isSubmitting}
+                        options={countryOpts}
                       />
                       <EditableField
                         label="Classe Agevolazione"
@@ -446,6 +500,7 @@ const ProfilePage = () => {
                         fieldKey="classeAgevolazione"
                         onSave={handleSaveField}
                         isLoading={isSubmitting}
+                        options={agevolOpts}
                       />
                     </div>
                     
@@ -510,7 +565,6 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
         </TabsContent>
-
 
         {/* Security Tab */}
         <TabsContent value="security">

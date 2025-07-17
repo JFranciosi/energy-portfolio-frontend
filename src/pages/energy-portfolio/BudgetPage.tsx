@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import Swal from "sweetalert2";
 import { Download } from "lucide-react";
 
-
 interface MeseDati {
   mese: string;
   prezzoEnergiaPerc: number;
@@ -26,8 +25,8 @@ export interface PodInfo {
   sede?: string;
 }
 
-const PATH = "http://localhost:8081";
-const YEARS = Array.from({ length: 8 }, (_, i) => 2023 + i);
+const PATH   = "http://localhost:8081";
+const YEARS  = Array.from({ length: 8 }, (_, i) => 2023 + i);
 const MONTHS = [
   "Gennaio","Febbraio","Marzo","Aprile",
   "Maggio","Giugno","Luglio","Agosto",
@@ -43,8 +42,12 @@ const euroFormatter = new Intl.NumberFormat("it-IT", {
   style: "currency",
   currency: "EUR",
   minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
+/* -------------------------------------------------------------------------- */
+/*                                   CARD                                     */
+/* -------------------------------------------------------------------------- */
 const BudgetCard: React.FC<{
   data: MeseDati;
   idx: number;
@@ -56,10 +59,11 @@ const BudgetCard: React.FC<{
   const [isSaving, setIsSaving] = useState(false);
 
   const prezzoEnergia = data.prezzoEnergiaBase * (1 + data.prezzoEnergiaPerc / 100);
-  const consumi       = data.consumiBase * (1 + data.consumiPerc / 100);
-  const oneri         = data.oneriBase * (1 + data.oneriPerc / 100);
+  const consumi       = data.consumiBase       * (1 + data.consumiPerc       / 100);
+  const oneri         = data.oneriBase         * (1 + data.oneriPerc         / 100);
   const spesaTotale   = prezzoEnergia * consumi + oneri;
 
+  /* ------------------------------ Save single ----------------------------- */
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -107,9 +111,11 @@ const BudgetCard: React.FC<{
     }
   };
 
+  /* --------------------------------- JSX --------------------------------- */
   return (
     <Card className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-0">
       <div className="flex flex-col sm:flex-row items-stretch">
+        {/* -------------------------- Lato sinistro -------------------------- */}
         <div className="flex-1 p-4">
           <CardHeader className="p-0 pb-2 border-b border-gray-100 bg-white">
             <div className="flex items-center space-x-3">
@@ -117,11 +123,24 @@ const BudgetCard: React.FC<{
               <CardTitle className="text-gray-800 text-base font-semibold">{data.mese}</CardTitle>
             </div>
           </CardHeader>
+
           <CardContent className="p-0 pt-4 flex flex-col gap-6">
             {[
-              { label: "Prezzo Energia", baseValue: prezzoEnergia.toFixed(4) + " €/kWh", percValue: data.prezzoEnergiaPerc },
-              { label: "Consumi", baseValue: consumi.toFixed(2) + " kWh", percValue: data.consumiPerc },
-              { label: "Oneri", baseValue: euroFormatter.format(oneri), percValue: data.oneriPerc },
+              {
+                label: "Prezzo Energia",
+                baseValue: `${prezzoEnergia.toFixed(2)} €/kWh`,
+                percValue: data.prezzoEnergiaPerc,
+              },
+              {
+                label: "Consumi",
+                baseValue: `${consumi.toFixed(2)} kWh`,
+                percValue: data.consumiPerc,
+              },
+              {
+                label: "Oneri",
+                baseValue: euroFormatter.format(oneri),
+                percValue: data.oneriPerc,
+              },
             ].map(({ label, baseValue, percValue }) => (
               <div key={label} className="flex items-center justify-between gap-6">
                 <div className="flex flex-col">
@@ -129,12 +148,13 @@ const BudgetCard: React.FC<{
                   <div className="font-bold text-lg">{baseValue}</div>
                 </div>
                 <div className="flex flex-col items-end min-w-[80px]">
-                  <span className="text-xs text-gray-500 flex items-center h-full">
-                    ({percValue >= 0 ? "+" : ""}{percValue}%)
+                  <span className="text-xs text-gray-500">
+                    ({percValue >= 0 ? "+" : ""}{percValue.toFixed(1)}%)
                   </span>
                 </div>
               </div>
             ))}
+
             <div>
               <Label className="block text-xs mb-1 text-gray-500">Spesa Totale</Label>
               <div className="font-bold text-lg text-blue-700">{euroFormatter.format(spesaTotale)}</div>
@@ -142,17 +162,20 @@ const BudgetCard: React.FC<{
           </CardContent>
         </div>
 
+        {/* -------------------------- Lato destro --------------------------- */}
         <div className="flex-2 flex flex-col justify-center p-5 gap-12 border-l border-gray-100 bg-gray-50 pt-12">
           {["prezzoEnergiaPerc", "consumiPerc", "oneriPerc"].map(field => {
             const value = data[field as keyof MeseDati] as number;
-            const pos = (value + 100) / 2;
-            const bgStyle = `linear-gradient(to right, #2563eb 0%, #2563eb ${pos}%, #e5e7eb ${pos}%, #e5e7eb 100%)`;
+            const pos   = (value + 100) / 2;
+            const bg    = `linear-gradient(to right,#2563eb 0%,#2563eb ${pos}%,#e5e7eb ${pos}%,#e5e7eb 100%)`;
 
             return (
               <div key={field} className="flex flex-col gap-2">
                 <Label className="block text-sm font-medium mb-1">
-                  {field === "prezzoEnergiaPerc" ? "Prezzo Energia (%)"
-                    : field === "consumiPerc" ? "Consumi (%)"
+                  {field === "prezzoEnergiaPerc"
+                    ? "Prezzo Energia (%)"
+                    : field === "consumiPerc"
+                    ? "Consumi (%)"
                     : "Oneri (%)"}
                 </Label>
                 <input
@@ -164,7 +187,7 @@ const BudgetCard: React.FC<{
                   onChange={e => updateRow(idx, field as any, parseInt(e.target.value))}
                   className="w-full h-3 rounded-lg cursor-pointer"
                   style={{
-                    background: bgStyle,
+                    background: bg,
                     WebkitAppearance: "none",
                     MozAppearance: "none",
                     appearance: "none",
@@ -174,6 +197,7 @@ const BudgetCard: React.FC<{
               </div>
             );
           })}
+
           <Button
             size="sm"
             onClick={handleSave}
@@ -188,11 +212,15 @@ const BudgetCard: React.FC<{
   );
 };
 
+/* -------------------------------------------------------------------------- */
+/*                                MAIN PAGE                                   */
+/* -------------------------------------------------------------------------- */
 const BudgetPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabId>("pbi");
+  const [activeTab, setActiveTab]   = useState<TabId>("pbi");
   const [podOptions, setPodOptions] = useState<PodInfo[]>([]);
-  const [pod, setPod] = useState<PodInfo | null>(null);
-  const [anno, setAnno] = useState(2025);
+  const [pod, setPod]               = useState<PodInfo | null>(null);
+  const [anno, setAnno]             = useState(2025);
+
   const [rows, setRows] = useState<MeseDati[]>(() =>
     MONTHS.map(m => ({
       mese: m,
@@ -208,11 +236,14 @@ const BudgetPage: React.FC = () => {
   );
   const [hasData, setHasData] = useState(true);
 
+  /* -------------------------- LOAD FORECASTS --------------------------- */
   const loadForecasts = useCallback(async () => {
     try {
+      /* ---------------------------- POD = ALL --------------------------- */
       if (pod?.id === "ALL") {
         const podSingoli = podOptions.filter(p => p.id !== "ALL");
 
+        /* Carica bilanci per ogni POD */
         let allDataPerPod = await Promise.all(
           podSingoli.map(async podItem => {
             const res = await fetch(`${PATH}/budget/${podItem.id}/${anno}`, { credentials: "include" });
@@ -221,7 +252,8 @@ const BudgetPage: React.FC = () => {
           })
         );
 
-        const allDataEmpty = allDataPerPod.every(data => !data || data.length === 0);
+        /* Fallback: anno precedente */
+        const allDataEmpty = allDataPerPod.every(d => !d || d.length === 0);
         if (allDataEmpty && anno > YEARS[0]) {
           allDataPerPod = await Promise.all(
             podSingoli.map(async podItem => {
@@ -232,7 +264,8 @@ const BudgetPage: React.FC = () => {
           );
         }
 
-        const isEmptyAfterFallback = allDataPerPod.every(data => !data || data.length === 0);
+        /* Nessun dato nemmeno nel fallback */
+        const isEmptyAfterFallback = allDataPerPod.every(d => !d || d.length === 0);
         if (isEmptyAfterFallback) {
           setHasData(false);
           setRows(MONTHS.map(m => ({
@@ -249,19 +282,17 @@ const BudgetPage: React.FC = () => {
           return;
         }
 
+        /* Aggregazione sui 12 mesi */
         const aggregatedData: MeseDati[] = MONTHS.map((meseNome, idx) => {
           const meseIndex = idx + 1;
-          let prezzoSum = 0;
-          let prezzoCount = 0;
-          let consumiSum = 0;
-          let oneriSum = 0;
 
-          let prezzoPercSum = 0;
-          let prezzoPercCount = 0;
-          let consumiPercSum = 0;
-          let consumiPercCount = 0;
-          let oneriPercSum = 0;
-          let oneriPercCount = 0;
+          let prezzoSum = 0, prezzoCount = 0;
+          let consumiSum = 0;
+          let oneriSum   = 0;
+
+          let prezzoPercSum = 0, prezzoPercCount = 0;
+          let consumiPercSum = 0, consumiPercCount = 0;
+          let oneriPercSum   = 0, oneriPercCount   = 0;
 
           allDataPerPod.forEach(podData => {
             if (!podData) return;
@@ -272,7 +303,7 @@ const BudgetPage: React.FC = () => {
                 prezzoCount++;
               }
               if (typeof rec.consumiBase === "number") consumiSum += rec.consumiBase;
-              if (typeof rec.oneriBase === "number") oneriSum += rec.oneriBase;
+              if (typeof rec.oneriBase   === "number") oneriSum   += rec.oneriBase;
 
               if (typeof rec.prezzoEnergiaPerc === "number") {
                 prezzoPercSum += rec.prezzoEnergiaPerc;
@@ -289,14 +320,14 @@ const BudgetPage: React.FC = () => {
             }
           });
 
-          const prezzoMedia = prezzoCount > 0 ? prezzoSum / prezzoCount : 0.1;
-          const consumiBase = consumiSum;
-          const oneriBase = oneriSum;
-          const spesaTotale = prezzoMedia * consumiBase + oneriBase;
+          const prezzoMedia     = prezzoCount > 0 ? prezzoSum / prezzoCount : 0.1;
+          const consumiBase     = consumiSum;
+          const oneriBase       = oneriSum;
+          const spesaTotale     = prezzoMedia * consumiBase + oneriBase;
 
-          const prezzoPercMedia = prezzoPercCount > 0 ? prezzoPercSum / prezzoPercCount : 0;
-          const consumiPercMedia = consumiPercCount > 0 ? consumiPercSum / consumiPercCount : 0;
-          const oneriPercMedia = oneriPercCount > 0 ? oneriPercSum / oneriPercCount : 0;
+          const prezzoPercMedia = prezzoPercCount  > 0 ? prezzoPercSum  / prezzoPercCount  : 0;
+          const consumiPercMedia= consumiPercCount > 0 ? consumiPercSum / consumiPercCount : 0;
+          const oneriPercMedia  = oneriPercCount   > 0 ? oneriPercSum   / oneriPercCount   : 0;
 
           return {
             mese: meseNome,
@@ -314,15 +345,18 @@ const BudgetPage: React.FC = () => {
         setRows(aggregatedData);
         setHasData(true);
 
+      /* -------------------------- POD singolo --------------------------- */
       } else if (pod) {
-        let res = await fetch(`${PATH}/budget/${pod.id}/${anno}`, { credentials: "include" });
+        let res  = await fetch(`${PATH}/budget/${pod.id}/${anno}`, { credentials: "include" });
         let data = res.ok ? await res.json() : [];
 
+        /* Fallback anno precedente se vuoto */
         if ((!data || data.length === 0) && anno > YEARS[0]) {
           res = await fetch(`${PATH}/budget/${pod.id}/${anno - 1}`, { credentials: "include" });
           if (res.ok) data = await res.json();
         }
 
+        /* Nessun dato */
         if (!data || data.length === 0) {
           setHasData(false);
           setRows(MONTHS.map(m => ({
@@ -339,22 +373,24 @@ const BudgetPage: React.FC = () => {
           return;
         }
 
+        /* Popola righe */
         setHasData(true);
         setRows(MONTHS.map((m, idx) => {
           const rec = data.find((d: any) => d.mese === idx + 1);
           return {
             mese: m,
             prezzoEnergiaPerc: rec?.prezzoEnergiaPerc ?? 0,
-            consumiPerc: rec?.consumiPerc ?? 0,
-            oneriPerc: rec?.oneriPerc ?? 0,
+            consumiPerc:       rec?.consumiPerc       ?? 0,
+            oneriPerc:         rec?.oneriPerc         ?? 0,
             prezzoEnergiaBase: rec?.prezzoEnergiaBase ?? 0.1,
-            consumiBase: rec?.consumiBase ?? 0,
-            oneriBase: rec?.oneriBase ?? 0,
-            spesaTotale: 0,
+            consumiBase:       rec?.consumiBase       ?? 0,
+            oneriBase:         rec?.oneriBase         ?? 0,
+            spesaTotale:       0,
             editable: true,
           };
         }));
 
+      /* ----------------------- Nessun POD selezionato -------------------- */
       } else {
         setHasData(false);
         setRows(MONTHS.map(m => ({
@@ -371,10 +407,11 @@ const BudgetPage: React.FC = () => {
       }
     } catch {
       setHasData(false);
-      setRows(rows => rows.map(r => ({ ...r, editable: false })));
+      setRows(rs => rs.map(r => ({ ...r, editable: false })));
     }
   }, [pod, anno, podOptions]);
 
+  /* ------------------------- INIT pod options -------------------------- */
   useEffect(() => {
     fetch(`${PATH}/pod`, { credentials: "include" })
       .then(r => {
@@ -389,10 +426,12 @@ const BudgetPage: React.FC = () => {
       .catch(() => setPodOptions([]));
   }, []);
 
+  /* ------------------- ricarica quando cambiano deps ------------------- */
   useEffect(() => {
     loadForecasts();
   }, [loadForecasts]);
 
+  /* --------------------------- Update row ----------------------------- */
   const updateRow = useCallback(<K extends keyof MeseDati>(i: number, field: K, value: MeseDati[K]) => {
     setRows(rs => {
       const nr = [...rs];
@@ -401,22 +440,18 @@ const BudgetPage: React.FC = () => {
     });
   }, []);
 
+  /* ------------------------- EXPORT EXCEL ----------------------------- */
   const handleExportExcel = async () => {
     if (!pod) return;
-
     try {
       const url = `${PATH}/budget/export?pod=${encodeURIComponent(pod.id)}&anno=${anno}`;
-      const res = await fetch(url, {
-        method: "GET",
-        credentials: "include",
-      });
+      const res = await fetch(url, { method: "GET", credentials: "include" });
       if (!res.ok) throw new Error(`Errore export: ${res.status}`);
 
       const blob = await res.blob();
-      const filename = `budget_${pod.id}_${anno}.xlsx`;
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
-      link.download = filename;
+      link.download = `budget_${pod.id}_${anno}.xlsx`;
       link.click();
       window.URL.revokeObjectURL(link.href);
     } catch (error: any) {
@@ -424,15 +459,19 @@ const BudgetPage: React.FC = () => {
     }
   };
 
+  /* -------------------------------- RENDER ----------------------------- */
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Budget Energia</h1>
-        <p className="text-lg text-gray-700">Pianifica, monitora e ottimizza il budget energetico della tua azienda</p>
+        <p className="text-lg text-gray-700">
+          Pianifica, monitora e ottimizza il budget energetico della tua azienda
+        </p>
       </div>
 
       <SecondaryNavbar items={NAV_TABS} activeItemId={activeTab} onItemClick={setActiveTab} />
 
+      {/* ----------------------------- TAB PBI ----------------------------- */}
       {activeTab === "pbi" ? (
         <Card className="mt-6">
           <CardHeader />
@@ -441,10 +480,11 @@ const BudgetPage: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
+        /* --------------------------- TAB BUDGET -------------------------- */
         <>
           <div className="bg-white rounded-md shadow p-6 mb-6 border border-gray-200">
             <div className="flex items-center gap-6">
-              {/* Seleziona POD */}
+              {/* ----------------------- Seleziona POD ---------------------- */}
               <div className="flex-1 max-w-[420px] mb-7">
                 <Label className="block text-sm font-medium mb-1">Seleziona POD</Label>
                 <Select
@@ -465,7 +505,7 @@ const BudgetPage: React.FC = () => {
                 </Select>
               </div>
 
-              {/* Anno */}
+              {/* -------------------------- Anno --------------------------- */}
               <div className="flex flex-col flex-1 max-w-[420px] mb-2">
                 <Label className="block text-sm font-medium mb-1">Anno</Label>
                 <Select value={String(anno)} onValueChange={v => setAnno(Number(v))}>
@@ -473,18 +513,22 @@ const BudgetPage: React.FC = () => {
                     <SelectValue>{anno}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                    {YEARS.map(y => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                  <p
-                    className="text-red-500 text-xs mt-1"
-                    style={{ visibility: hasData ? "hidden" : "visible", minHeight: "1rem" }}
-                  >
-                    Nessuna bolletta trovata
-                  </p>
+                <p
+                  className="text-red-500 text-xs mt-1"
+                  style={{ visibility: hasData ? "hidden" : "visible", minHeight: "1rem" }}
+                >
+                  Nessuna bolletta trovata
+                </p>
               </div>
 
-              {/* Bottone Esporta Excel */}
+              {/* ------------------- Bottone Export ------------------------- */}
               <div className="flex-1 flex justify-end max-w-m">
                 <Button
                   size="sm"
@@ -499,11 +543,14 @@ const BudgetPage: React.FC = () => {
             </div>
           </div>
 
+          {/* ------------------------ Griglia card ------------------------ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {rows.map((r, i) => (
               <BudgetCard
                 key={`${r.mese}-${pod?.id}`}
-                data={r} idx={i} updateRow={updateRow}
+                data={r}
+                idx={i}
+                updateRow={updateRow}
                 podCode={pod?.id ?? ""}
                 anno={anno}
                 onSaveSuccess={loadForecasts}
@@ -513,6 +560,7 @@ const BudgetPage: React.FC = () => {
         </>
       )}
 
+      {/* ---------------------------- Note ------------------------------ */}
       <div className="mt-8">
         <NotesSection title="Note sul Controllo">
           <p className="text-sm text-gray-600">
