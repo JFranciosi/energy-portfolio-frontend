@@ -97,8 +97,6 @@ export const AppSidebar = () => {
     // Definiamo i menu items con condizioni di accesso
     const menuItems = [
         {title: 'Home', path: '/', icon: Home, visible: true},
-        {title: 'Servizi', path: '/services', icon: Briefcase, visible: true},
-        {title: 'Contatti', path: '/contact', icon: Mail, visible: true},
         {title: 'Energy Portfolio', path: '/energy-portfolio', icon: BarChart3, visible: accessoEffettuato},
         {
             title: 'Crea Utente',

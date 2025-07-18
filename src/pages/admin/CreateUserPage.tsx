@@ -262,12 +262,33 @@ const CreateUserPage = () => {
           setCreationSuccess(false);
         }, 1000);
       } else {
-        const errJson = await response.json();
+        let errMsg = "Si è verificato un errore durante la creazione dell'utente";
+        let errJson = null;
+        try {
+          errJson = await response.json();
+        } catch (_) {}
+
+        // Se il backend restituisce 409 Conflict
+        if (response.status === 409) {
+          errMsg = "Esiste già un utente con questo nome utente";
+        }
+        // Se nel messaggio del backend troviamo 'Duplicate entry'
+        else if (errJson?.message && errJson.message.includes("Duplicate entry")) {
+          errMsg = "Esiste già un utente con questo nome utente";
+        }
+        // Altri errori
+        else if (errJson?.message) {
+          errMsg = errJson.message;
+        }
+
+        // Mostra l'errore sotto il campo username
+        setErrors((prev) => ({ ...prev, username: errMsg }));
+
+        // Alert visivo
         await Swal.fire({
           icon: "error",
           title: "Errore",
-          text:
-            errJson?.message || "Si è verificato un errore durante la creazione dell'utente",
+          text: errMsg,
         });
       }
     } catch (error) {
@@ -559,6 +580,7 @@ const CreateUserPage = () => {
                         id="email"
                         name="email"
                         type="email"
+                        autoComplete="username"
                         className={cn(
                           "pl-11 h-11 rounded-md",
                           errors.email
@@ -875,6 +897,7 @@ const CreateUserPage = () => {
                           id="password"
                           name="password"
                           type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           className={cn(
                             "pl-11 pr-11 h-11 rounded-md",
                             errors.password ? "border-red-500" : ""
@@ -926,6 +949,7 @@ const CreateUserPage = () => {
                           id="confirmPassword"
                           name="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           className={cn(
                             "pl-11 pr-11 h-11 rounded-md",
                             errors.confirmPassword ? "border-red-500" : "",

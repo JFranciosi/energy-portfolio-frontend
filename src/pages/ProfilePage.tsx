@@ -7,6 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -41,6 +48,11 @@ interface UserData {
   checkEmail: boolean;
 }
 
+interface Option {
+  label: string;
+  value: string;
+}
+
 const fallbackUserData: UserData = {
   id: 6,
   username: "Alessio",
@@ -61,15 +73,31 @@ const fallbackUserData: UserData = {
   checkEmail: false
 };
 
+const countryOpts: Option[] = [
+  { label: "IT", value: "IT" },
+  { label: "RU", value: "RU" },
+  { label: "FR", value: "FR" },
+  { label: "ES", value: "ES" },
+];
+
+const agevolOpts: Option[] = [
+  { label: "No Agevolazioni", value: "No Agevolazioni" },
+  { label: "Fat1", value: "Fat1" },
+  { label: "Fat2", value: "Fat2" },
+  { label: "Fat3", value: "Fat3" },
+  { label: "Val",  value: "Val"  },
+];
+
 // Component for editable field
 interface EditableFieldProps {
   label: string;
   value: string | number;
   fieldKey: keyof UserData;
   onSave: (fieldKey: keyof UserData, value: any) => void;
-  type?: string;
+  type?: "text" | "email" | "number" | "tel";
   isLoading?: boolean;
   disableEdit?: boolean;
+  options?: Option[];   // <-- supporta anche select
 }
 
 const EditableField: React.FC<EditableFieldProps> = ({
@@ -80,6 +108,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
   type = 'text',
   isLoading = false,
   disableEdit = false,
+  options,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [fieldValue, setFieldValue] = useState(value);
@@ -97,13 +126,33 @@ const EditableField: React.FC<EditableFieldProps> = ({
     return (
       <div className="space-y-2">
         <Label htmlFor={String(fieldKey)}>{label}</Label>
-        <div className="flex gap-2">
-          <Input
-            id={String(fieldKey)}
-            type={type}
-            value={fieldValue}
-            onChange={(e) => setFieldValue(type === 'number' ? parseFloat(e.target.value) : e.target.value)}
-          />
+        <div className="flex gap-2 items-center">
+          {options ? (
+            <Select value={String(fieldValue)} onValueChange={setFieldValue}>
+              <SelectTrigger className="w-full h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={String(fieldKey)}
+              type={type}
+              value={fieldValue as any}
+              onChange={(e) =>
+                setFieldValue(
+                  type === "number" ? parseFloat(e.target.value) : e.target.value
+                )
+              }
+            />
+          )}
+
           <Button
             size="icon"
             type="button"
@@ -111,7 +160,11 @@ const EditableField: React.FC<EditableFieldProps> = ({
             className="shrink-0"
             disabled={isLoading}
           >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -181,6 +234,8 @@ const ProfilePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [keepLogged, setKeepLogged] = useState(false);
+  const [keepLoggedLoading, setKeepLoggedLoading] = useState(false);
   const { toast } = useToast();
 
   // Password schema con Zod
@@ -222,6 +277,17 @@ const ProfilePage = () => {
           checkEmail: Boolean(data.checkEmail)
         };
         setUserData(safeData);
+
+        // Recupera anche keepLogged dalla sessione
+        const sessResp = await fetch(`${PATH_DEV}/cliente/sessione`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (sessResp.ok) {
+          const sessData = await sessResp.json();
+          setKeepLogged(sessData.keepLogged);
+        }
       } else {
         throw new Error(`Errore durante il recupero dei dati: ${response.status}`);
       }
@@ -260,30 +326,56 @@ const ProfilePage = () => {
     }
   };
 
-  // Aggiorna password
-  const handlePasswordSubmit = async (values: z.infer<typeof passwordSchema>) => {
-    setIsSubmitting(true);
+const handlePasswordSubmit = async (values: z.infer<typeof passwordSchema>) => {
+  setIsSubmitting(true);
+  try {
+    const response = await fetch(`${PATH_DEV}/cliente/update-password`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword
+      }),
+    });
+    if (response.ok) {
+      toast({ title: "Password aggiornata", description: "La tua password è stata aggiornata con successo." });
+      passwordForm.reset();
+    } else {
+      const text = await response.text();
+      toast({ title: "Errore", description: text || "Impossibile aggiornare la password", variant: "destructive" });
+    }
+  } catch (error) {
+    console.error("Errore durante l'aggiornamento password:", error);
+    toast({ title: "Errore di connessione", description: "Verifica la tua connessione e riprova", variant: "destructive" });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  const handleKeepLogged = async () => {
+    setKeepLoggedLoading(true);
     try {
-      const response = await fetch(`${PATH_DEV}/cliente/update-password`, {
-        method: 'PUT',
+      if (!userData.id) throw new Error("Utente non identificato");
+      const response = await fetch(`${PATH_DEV}/cliente/keep-logged`, {
+        method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword
-        }),
+        body: JSON.stringify({ idUtente: userData.id, keepLogged: !keepLogged })
       });
       if (response.ok) {
-        toast({ title: "Password aggiornata", description: "La tua password è stata aggiornata con successo." });
-        passwordForm.reset();
+        setKeepLogged(!keepLogged);
+        toast({
+          title: "Preferenza aggiornata",
+          description: `Resta connesso è ora ${!keepLogged ? "attivato" : "disattivato"}.`,
+        });
       } else {
-        const text = await response.text();
-        toast({ title: "Errore", description: text || "Impossibile aggiornare la password", variant: "destructive" });
+        toast({ title: "Errore", description: "Impossibile aggiornare la preferenza.", variant: "destructive" });
       }
-    } catch {
-      toast({ title: "Errore di connessione", description: "Verifica la tua connessione e riprova", variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Errore", description: error instanceof Error ? error.message : "Errore sconosciuto", variant: "destructive" });
     } finally {
-      setIsSubmitting(false);
+      setKeepLoggedLoading(false);
     }
   };
 
@@ -342,14 +434,24 @@ const ProfilePage = () => {
             )}
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={getCliente}
-          disabled={isLoading}
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Aggiorna dati
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={getCliente}
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Aggiorna dati
+          </Button>
+          <Button
+            variant={keepLogged ? "default" : "outline"}
+            onClick={handleKeepLogged}
+            disabled={isLoading || keepLoggedLoading}
+          >
+            {keepLoggedLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {keepLogged ? "Disattiva Resta Connesso" : "Resta connesso"}
+          </Button>
+        </div>
       </div>
 
       {/* Profile Tabs */}
@@ -434,11 +536,12 @@ const ProfilePage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <EditableField
-                        label="Stato"
+                        label="Paese"
                         value={userData.stato}
                         fieldKey="stato"
                         onSave={handleSaveField}
                         isLoading={isSubmitting}
+                        options={countryOpts}
                       />
                       <EditableField
                         label="Classe Agevolazione"
@@ -446,6 +549,7 @@ const ProfilePage = () => {
                         fieldKey="classeAgevolazione"
                         onSave={handleSaveField}
                         isLoading={isSubmitting}
+                        options={agevolOpts}
                       />
                     </div>
                     
@@ -511,7 +615,6 @@ const ProfilePage = () => {
           </Card>
         </TabsContent>
 
-
         {/* Security Tab */}
         <TabsContent value="security">
           <Card>
@@ -576,39 +679,6 @@ const ProfilePage = () => {
                         "Aggiorna password"
                       )}
                     </Button>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <h3 className="text-lg font-medium mb-4">Sicurezza account</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Autenticazione a due fattori</p>
-                          <p className="text-sm text-muted-foreground">Aggiungi un ulteriore livello di sicurezza al tuo account</p>
-                        </div>
-                        <Switch
-                          checked={false}
-                          onCheckedChange={() => {
-                            toast({
-                              title: "Funzionalità non disponibile",
-                              description: "L'autenticazione a due fattori sarà disponibile in futuro.",
-                            });
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Sessioni attive</p>
-                          <p className="text-sm text-muted-foreground">Gestisci i dispositivi connessi al tuo account</p>
-                        </div>
-                        <Button variant="outline" onClick={() => {
-                          toast({
-                            title: "Funzionalità non disponibile",
-                            description: "La gestione delle sessioni sarà disponibile in futuro.",
-                          });
-                        }}>Gestisci</Button>
-                      </div>
-                    </div>
                   </div>
                 </form>
               </Form>

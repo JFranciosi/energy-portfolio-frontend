@@ -27,18 +27,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+/* -------------------------------------------------------------------------- */
+/*                                  Tipi                                      */
+/* -------------------------------------------------------------------------- */
 interface Cliente {
   id: number;
   username: string;
   email: string;
-  tipologia: string; 
+  tipologia: string;
   stato: string;
   telefono?: string;
 }
 
+/* -------------------------------------------------------------------------- */
+/*                           Costanti di ambiente                             */
+/* -------------------------------------------------------------------------- */
 const PATH_DEV = "http://localhost:8081";
 
-const UserManagement = () => {
+/* -------------------------------------------------------------------------- */
+/*                           Componente principale                            */
+/* -------------------------------------------------------------------------- */
+const UserManagement: React.FC = () => {
   const [userRole] = useState<string>("Admin");
 
   const [userList, setUserList] = useState<Cliente[]>([]);
@@ -55,15 +64,12 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteUser, setDeleteUser] = useState<Cliente | null>(null);
 
+  /* --------------------------- FETCH UTENTI --------------------------- */
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${PATH_DEV}/cliente/list`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error(`Errore caricamento utenti: ${res.statusText}`);
-      }
+      const res = await fetch(`${PATH_DEV}/cliente/list`, { credentials: "include" });
+      if (!res.ok) throw new Error(`Errore caricamento utenti: ${res.statusText}`);
       const data: Cliente[] = await res.json();
       setUserList(data);
     } catch (error: any) {
@@ -77,9 +83,10 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
+  /* --------------------------- DIALOG EDIT --------------------------- */
   const openEditDialog = (user: Cliente) => {
     setEditUser(user);
-    setEditForm({ ...user }); // clonazione oggetto per sicurezza
+    setEditForm({ ...user });
     setEditDialogOpen(true);
   };
 
@@ -89,27 +96,15 @@ const UserManagement = () => {
 
   const handleEditSave = async () => {
     if (!editUser) return;
-
     try {
       const { id, ...fieldsToUpdate } = editForm;
-
-      if (!editUser.id) {
-        throw new Error("ID utente non definito.");
-      }
-
       const res = await fetch(`${PATH_DEV}/cliente/update/${editUser.id}`, {
         method: "PUT",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(fieldsToUpdate),
       });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Errore aggiornamento utente");
-      }
+      if (!res.ok) throw new Error((await res.text()) || "Errore aggiornamento utente");
 
       Swal.fire("Salvato!", "Modifiche salvate con successo.", "success");
       setEditDialogOpen(false);
@@ -121,6 +116,7 @@ const UserManagement = () => {
     }
   };
 
+  /* ------------------------- DIALOG DELETE --------------------------- */
   const openDeleteDialog = (user: Cliente) => {
     setDeleteUser(user);
     setDeleteDialogOpen(true);
@@ -128,16 +124,13 @@ const UserManagement = () => {
 
   const handleDeleteConfirm = async () => {
     if (!deleteUser) return;
-
     try {
       const res = await fetch(`${PATH_DEV}/cliente/delete/${deleteUser.id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Errore eliminazione utente");
-      }
+      if (!res.ok) throw new Error((await res.text()) || "Errore eliminazione utente");
+
       Swal.fire("Eliminato!", "Utente eliminato con successo.", "success");
       setDeleteDialogOpen(false);
       setDeleteUser(null);
@@ -147,98 +140,89 @@ const UserManagement = () => {
     }
   };
 
+  /* ---------------------------- FILTRI ------------------------------- */
   const filteredUsers = useMemo(() => {
     return userList.filter((user) => {
-      const matchEmail = filterEmail.trim()
-        ? user.email.toLowerCase().includes(filterEmail.trim().toLowerCase())
+      const matchEmail = filterEmail
+        ? user.email.toLowerCase().includes(filterEmail.toLowerCase())
         : true;
-      const matchUsername = filterUsername.trim()
-        ? user.username.toLowerCase().includes(filterUsername.trim().toLowerCase())
+      const matchUsername = filterUsername
+        ? user.username.toLowerCase().includes(filterUsername.toLowerCase())
         : true;
       const matchTipologia =
         filterTipologia === "Tutti" ? true : user.tipologia === filterTipologia;
-
       return matchEmail && matchUsername && matchTipologia;
     });
   }, [userList, filterEmail, filterUsername, filterTipologia]);
 
+  /* ------------------------------------------------------------------ */
+  /*                               RENDER                               */
+  /* ------------------------------------------------------------------ */
   return (
-    <div className="container mx-auto p-4 max-w-8xl">
-      <h1 className="text-3xl font-bold text-primary mb-6">Gestione Utenti</h1>
+    <div className="container mx-auto max-w-7xl p-6">
+      <h1 className="text-3xl font-bold text-primary mb-2">Gestione Utenti</h1>
       <p className="mb-6 text-muted-foreground">
-        Visualizza, modifica o elimina gli utenti dal sistema.
+        Visualizza, filtra, modifica o elimina gli utenti dal sistema.
       </p>
 
-      <style>{`
-        .filter-input {
-          height: 44px; /* altezza fissa */
-          width: 100%; /* larghezza piena per il container */
-          max-width: 380px; /* max larghezza uguale per tutti */
-          gap-x: 6px; /* spazio tra label e input */
-        }
-      `}</style>
+      {/* --------------------------- Sezione filtri --------------------------- */}
+      <div className="mb-8 rounded-lg bg-white shadow p-6">
 
-      <div className="rounded-lg bg-white shadow-md p-4">
-        <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-          {/* FILTRO EMAIL */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Email */}
           <div className="flex flex-col">
-            <Label htmlFor="filterEmail" className="mb-1 text-sm font-medium text-gray-700">
-              Filtra per Email
+            <Label htmlFor="filterEmail" className="mb-1 text-sm font-medium">
+              Email
             </Label>
             <Input
               id="filterEmail"
-              type="text"
-              placeholder="Email utente"
+              placeholder="es. mario@azienda.it"
               value={filterEmail}
               onChange={(e) => setFilterEmail(e.target.value)}
-              className="filter-input rounded-md border border-gray-300 focus:border-black focus:ring-2 focus:ring-black"
+              className="h-10"
             />
           </div>
 
-          {/* FILTRO USERNAME */}
+          {/* Username */}
           <div className="flex flex-col">
-            <Label htmlFor="filterUsername" className="mb-1 text-sm font-medium text-gray-700">
-              Filtra per Nome Utente
+            <Label htmlFor="filterUsername" className="mb-1 text-sm font-medium">
+              Nome utente
             </Label>
             <Input
               id="filterUsername"
-              type="text"
-              placeholder="Nome utente"
+              placeholder="es. mariorossi"
               value={filterUsername}
               onChange={(e) => setFilterUsername(e.target.value)}
-              className="filter-input rounded-md border border-gray-300 focus:border-black focus:ring-2 focus:ring-black"
+              className="h-10"
             />
           </div>
 
-          {/* FILTRO TIPOLOGIA */}
-          <div className="pt-4">
-            <Label htmlFor="filterTipologia" className="mb-1 text-sm font-medium text-gray-700">
-              Filtra per Tipologia
+          {/* Tipologia */}
+          <div className="flex flex-col">
+            <Label htmlFor="filterTipologia" className="mb-1 text-sm font-medium">
+              Tipologia
             </Label>
-            <Select
-              value={filterTipologia}
-              onValueChange={(value) => setFilterTipologia(value)}
-            >
-              <SelectTrigger
-                id="filterTipologia"
-                className="filter-input"
-              >
-                <SelectValue placeholder="Filtra per Tipologia" />
+            <Select value={filterTipologia} onValueChange={setFilterTipologia}>
+              <SelectTrigger id="filterTipologia" className="h-10">
+                <SelectValue placeholder="Seleziona tipologia" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Tutti">Tutti</SelectItem>
+                <SelectItem value="Tutti">Tutte</SelectItem>
                 <SelectItem value="Admin">Admin</SelectItem>
                 <SelectItem value="Cliente">Cliente</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
+      </div>
 
+      {/* --------------------------- Tabella utenti --------------------------- */}
+      <div className="rounded-lg bg-white shadow p-6">
         {loading ? (
-          <p>Caricamento utenti in corso...</p>
+          <p>Caricamento utenti…</p>
         ) : (
-          <Table className="border rounded-lg shadow-sm overflow-hidden">
-            <TableHeader className="bg-gray-50 rounded-t-lg">
+          <Table>
+            <TableHeader className="bg-gray-50">
               <TableRow>
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
@@ -261,20 +245,20 @@ const UserManagement = () => {
                     key={user.id}
                     className="hover:bg-blue-50 transition-colors cursor-pointer"
                   >
-                    <TableCell className="py-3 px-4">{user.username}</TableCell>
-                    <TableCell className="py-3 px-4">{user.email}</TableCell>
-                    <TableCell className="py-3 px-4">{user.tipologia}</TableCell>
-                    <TableCell className="py-3 px-4">{user.stato}</TableCell>
-                    <TableCell className="py-3 px-4">{user.telefono || "-"}</TableCell>
-                    <TableCell className="py-3 px-4 text-center space-x-2">
+                    <TableCell>{user.username}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.tipologia}</TableCell>
+                    <TableCell>{user.stato}</TableCell>
+                    <TableCell>{user.telefono || "-"}</TableCell>
+                    <TableCell className="text-center space-x-2">
                       {userRole === "Admin" ? (
                         <>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => openEditDialog(user)}
-                            aria-label={`Modifica utente ${user.username}`}
-                            className="hover:bg-blue-300 rounded-md"
+                            aria-label={`Modifica ${user.username}`}
+                            className="hover:bg-blue-200"
                           >
                             <Pencil className="h-5 w-5 text-blue-600" />
                           </Button>
@@ -282,14 +266,14 @@ const UserManagement = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => openDeleteDialog(user)}
-                            aria-label={`Elimina utente ${user.username}`}
-                            className="hover:bg-red-300 rounded-md"
+                            aria-label={`Elimina ${user.username}`}
+                            className="hover:bg-red-200"
                           >
                             <Trash2 className="h-5 w-5 text-red-600" />
                           </Button>
                         </>
                       ) : (
-                        <span className="text-gray-400">Nessuna azione</span>
+                        <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -300,12 +284,15 @@ const UserManagement = () => {
         )}
       </div>
 
-      {/* Modale modifica */}
+      {/* --------------------------------------------------------------------- */}
+      {/*                         Modale modifica                               */}
+      {/* --------------------------------------------------------------------- */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-lg">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-primary">Modifica Utente</DialogTitle>
+            <DialogTitle>Modifica Utente</DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="username">Username</Label>
@@ -328,11 +315,11 @@ const UserManagement = () => {
               <Label htmlFor="tipologia">Tipologia</Label>
               <Select
                 value={editForm.tipologia || "Cliente"}
-                onValueChange={(value) => handleEditChange("tipologia", value)}
-                disabled={true}
+                onValueChange={(v) => handleEditChange("tipologia", v)}
+                disabled
               >
-                <SelectTrigger id="tipologia" className="w-full">
-                  <SelectValue placeholder="Seleziona tipologia" />
+                <SelectTrigger id="tipologia">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Cliente">Cliente</SelectItem>
@@ -344,10 +331,10 @@ const UserManagement = () => {
               <Label htmlFor="stato">Stato</Label>
               <Select
                 value={editForm.stato || "IT"}
-                onValueChange={(value) => handleEditChange("stato", value)}
+                onValueChange={(v) => handleEditChange("stato", v)}
               >
-                <SelectTrigger id="stato" className="w-full">
-                  <SelectValue placeholder="Seleziona Stato" />
+                <SelectTrigger id="stato">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="IT">Italia</SelectItem>
@@ -366,6 +353,7 @@ const UserManagement = () => {
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Annulla
@@ -375,18 +363,23 @@ const UserManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modale conferma eliminazione */}
+      {/* --------------------------------------------------------------------- */}
+      {/*                      Modale conferma eliminazione                     */}
+      {/* --------------------------------------------------------------------- */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm rounded-lg">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center text-red-600">
-              <AlertCircle className="h-5 w-5 mr-2" /> Conferma Eliminazione
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Conferma Eliminazione
             </DialogTitle>
           </DialogHeader>
+
           <div className="py-4">
-            Sei sicuro di voler eliminare l'utente{" "}
+            Sei sicuro di voler eliminare{" "}
             <strong>{deleteUser?.username}</strong>?
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Annulla
