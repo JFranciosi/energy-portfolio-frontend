@@ -7,20 +7,60 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ArrowRight, Activity, Settings, Monitor, FileText, BarChart2, Award, Check, MapPin, Mail, Phone } from 'lucide-react';
+import {
+  ArrowRight,
+  Activity,
+  Settings,
+  Monitor,
+  FileText,
+  BarChart2,
+  Award,
+  Check,
+  MapPin,
+  Mail,
+  Phone,
+} from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
-const HomePage = () => {
+// Componente per link con scroll smooth su ancore interne
+const AnchorLink: React.FC<{ to: string; children: React.ReactNode; className?: string }> = ({
+  to,
+  children,
+  className,
+}) => {
+  const location = useLocation();
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.querySelector(to);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      window.history.replaceState(null, '', to);
+    }
+  };
+
+  return (
+    <Link to={to} onClick={handleClick} className={className}>
+      {children}
+    </Link>
+  );
+};
+
+const HomePage: React.FC = () => {
   const isMobile = useIsMobile();
 
-  // Lista servizi per la sezione Servizi e FAQ
   const services = [
     {
       id: 'diagnosi',
@@ -103,7 +143,6 @@ const HomePage = () => {
     },
   ];
 
-  // FAQ per la sezione contatti
   const faqs = [
     {
       question: "Quali tipi di aziende possono beneficiare dei vostri servizi?",
@@ -148,7 +187,7 @@ const HomePage = () => {
                   size="lg"
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
-                  <Link to="#contact">Contattaci</Link>
+                  <AnchorLink to="#contact">Contattaci</AnchorLink>
                 </Button>
                 <Button
                   asChild
@@ -156,7 +195,7 @@ const HomePage = () => {
                   variant="outline"
                   className="bg-white/10 hover:bg-white/20 text-white border-white/20"
                 >
-                  <Link to="#services">Scopri i Servizi</Link>
+                  <AnchorLink to="#services">Scopri i Servizi</AnchorLink>
                 </Button>
               </div>
             </div>
@@ -229,10 +268,12 @@ const HomePage = () => {
       </section>
 
       {/* SERVIZI */}
-      <section id="services" className={cn('space-y-8 mt-5', !isMobile && 'ml-5')}>
+      <section
+        id="services"
+        className={cn('space-y-8 mt-5', !isMobile && 'ml-5')}
+      >
         <h2 className="text-3xl font-bold text-primary mb-6">I Nostri Servizi</h2>
 
-        {/* Cards servizi */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service) => (
             <Card
@@ -463,14 +504,14 @@ const HomePage = () => {
               <h3 className="text-xl font-semibold mb-4">Collegamenti</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="#services" className="hover:underline">
+                  <AnchorLink to="#services" className="hover:underline">
                     Servizi
-                  </Link>
+                  </AnchorLink>
                 </li>
                 <li>
-                  <Link to="#contact" className="hover:underline">
+                  <AnchorLink to="#contact" className="hover:underline">
                     Contatti
-                  </Link>
+                  </AnchorLink>
                 </li>
                 <li>
                   <Link to="/auth" className="hover:underline">

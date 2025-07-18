@@ -580,6 +580,7 @@ const CreateUserPage = () => {
                         id="email"
                         name="email"
                         type="email"
+                        autoComplete="username"
                         className={cn(
                           "pl-11 h-11 rounded-md",
                           errors.email
@@ -896,6 +897,7 @@ const CreateUserPage = () => {
                           id="password"
                           name="password"
                           type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           className={cn(
                             "pl-11 pr-11 h-11 rounded-md",
                             errors.password ? "border-red-500" : ""
@@ -947,6 +949,7 @@ const CreateUserPage = () => {
                           id="confirmPassword"
                           name="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           className={cn(
                             "pl-11 pr-11 h-11 rounded-md",
                             errors.confirmPassword ? "border-red-500" : "",
