@@ -23,7 +23,7 @@ import DashboardPage from "./pages/energy-portfolio/DashboardPage";
 import BudgetPage from "@/pages/energy-portfolio/BudgetPage";
 
 import CreateUserPage from "./pages/admin/CreateUserPage.tsx";
-import CostiPage from "./pages/admin/CostiPage.tsx";
+import DettaglioCostoPage from "./pages/admin/dettaglioCostoPage.tsx";
 import UserManagement from './pages/admin/UserManagement';
 
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
@@ -60,7 +60,7 @@ const App = () => (
 
             {/* Admin */}
             <Route path="/energy-portfolio/create-user" element={<Layout><CreateUserPage /></Layout>} />
-            <Route path="/admin/costi" element={<Layout><CostiPage /></Layout>} />
+            <Route path="/admin/costi" element={<Layout><DettaglioCostoPage /></Layout>} />
             <Route path="/user-management" element={<Layout><UserManagement /></Layout>} />
 
             {/* Legal */}
