@@ -317,28 +317,27 @@ const UploadBillsPage = () => {
     useEffect(() => { getFiles(); getPod(); }, []);
 
     const getFiles = async () => {
-    setLoading(true);
-    try {
-        // NIENTE PIÙ SESSION COOKIE!
-        const response = await fetch(`${PATH_DEV}/files/dati`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        if (response.ok) {
-            const result = await response.json();
-            setData(result);
-            // Debug: stampa sempre quanti file ricevi!
-            console.log("FILES DAL BACKEND:", result);
-        } else {
+        setLoading(true);
+        try {
+            const response = await fetch(`${PATH_DEV}/files/dati`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                const result = await response.json();
+                setData(result);
+                console.log("FILES DAL BACKEND:", result);
+            } else {
+                setData([]);
+            }
+        } catch (error) {
             setData([]);
+        } finally {
+            setLoading(false);
         }
-    } catch (error) {
-        setData([]);
-    } finally {
-        setLoading(false);
-    }
-};
+    };
+
     const getPod = async () => {
         try {
             const response = await fetch(`${PATH_DEV}/pod`, {
@@ -364,16 +363,21 @@ const UploadBillsPage = () => {
             }
         } catch (error) { }
     };
+
     const downloadFile = async (id: string, name: string) => {
         try {
-            const response = await axios.get(`${PATH_DEV}/files/${id}/download`, {
+            const response = await axios.get(`${PATH_DEV}/files/${id}/download-xlsx`, {
                 responseType: 'blob',
             });
             const contentDisposition = response.headers['content-disposition'];
             const fileName = contentDisposition
                 ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-                : name;
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+                : name.replace(/\.pdf$/i, '.xlsx');
+
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', fileName);
@@ -381,6 +385,16 @@ const UploadBillsPage = () => {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
+
+            // Swal alert dopo download
+            Swal.fire({
+                icon: 'success',
+                title: 'Download completato',
+                text: `Il file "${fileName}" è stato scaricato con successo.`,
+                timer: 2500,
+                timerProgressBar: true,
+                showConfirmButton: false,
+            });
         } catch (error) {
             Swal.fire({ icon: 'error', title: 'Errore', text: 'Impossibile scaricare il file' });
         }
