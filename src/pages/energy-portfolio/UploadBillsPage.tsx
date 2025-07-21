@@ -183,23 +183,15 @@ const FileUploadSection = ({ onFileUploadSuccess, filesUploaded }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // HANDLER SELEZIONE MULTIPLA
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let filesArr = Array.from(e.target.files || []);
-        filesArr = filesArr.filter(f => f.type === "application/pdf");
-        if (selectedFiles.length + filesArr.length > 12 - filesUploaded) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Troppi file selezionati',
-                text: 'Puoi caricare al massimo 12 file totali.'
-            });
-            return;
-        }
-        setSelectedFiles(prev => [...prev, ...filesArr].slice(0, 12 - filesUploaded));
-    };
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  let filesArr = Array.from(e.target.files || []);
+  filesArr = filesArr.filter(f => f.type === "application/pdf");
+  setSelectedFiles(prev => [...prev, ...filesArr]);
+};
 
-    const handleRemove = (index: number) => {
-        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    };
+const handleRemove = (index: number) => {
+  setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+};
 
     // UPLOAD TUTTI I FILE SELEZIONATI
     const handleUploadAll = async () => {
@@ -254,20 +246,20 @@ const FileUploadSection = ({ onFileUploadSuccess, filesUploaded }) => {
                 <h3 className="text-lg font-medium mb-2">Carica le tue bollette energetiche</h3>
                 <p className="text-sm text-muted-foreground mb-4">Trascina o seleziona uno o piu file PDF</p>
                 <input
-                    type="file"
-                    id="file-upload"
-                    accept=".pdf"
-                    multiple
-                    onChange={handleChange}
-                    className="hidden"
-                    disabled={isLoading || filesUploaded >= 12}
+                type="file"
+                id="file-upload"
+                accept=".pdf"
+                multiple
+                onChange={handleChange}
+                className="hidden"
+                disabled={isLoading}
                 />
                 <Button
-                    variant="outline"
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    disabled={isLoading || filesUploaded >= 12}
+                variant="outline"
+                onClick={() => document.getElementById('file-upload')?.click()}
+                disabled={isLoading}  // togli filesUploaded >= 12
                 >
-                    Seleziona file
+                Seleziona file
                 </Button>
                 {/* LISTA FILE */}
                 {selectedFiles.length > 0 && (
