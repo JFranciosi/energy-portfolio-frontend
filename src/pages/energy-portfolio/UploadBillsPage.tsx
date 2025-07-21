@@ -252,7 +252,7 @@ const FileUploadSection = ({ onFileUploadSuccess, filesUploaded }) => {
                     <Upload className="mx-auto h-12 w-12 text-muted-foreground"/>
                 </div>
                 <h3 className="text-lg font-medium mb-2">Carica le tue bollette energetiche</h3>
-                <p className="text-sm text-muted-foreground mb-4">Trascina o seleziona fino a 12 file PDF</p>
+                <p className="text-sm text-muted-foreground mb-4">Trascina o seleziona uno o piu file PDF</p>
                 <input
                     type="file"
                     id="file-upload"
@@ -366,7 +366,7 @@ const UploadBillsPage = () => {
 
     const downloadFile = async (id: string, name: string) => {
         try {
-            const response = await axios.get(`${PATH_DEV}/files/${id}/download-xlsx`, {
+            const response = await axios.get(`${PATH_DEV}/files/${id}/download`, {
                 responseType: 'blob',
             });
             const contentDisposition = response.headers['content-disposition'];
@@ -444,27 +444,6 @@ const UploadBillsPage = () => {
                     <div className="mb-8">
                         <FileUploadSection onFileUploadSuccess={handleFileUploadSuccess} filesUploaded={filteredAndSortedData.length}/>
                     </div>
-                )}
-                {/* PROGRESS BAR */}
-                {viewMode === 'bills' && (
-                <div className="mb-6">
-                    <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-primary">
-                            Bollette caricate: {filteredAndSortedData.length} / 12
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                            {Math.round((filteredAndSortedData.length / 12) * 100)}%
-                        </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
-                        <div
-                            className="bg-primary h-3 rounded-full transition-all duration-500"
-                            style={{
-                                width: `${Math.min((filteredAndSortedData.length / 12) * 100, 100)}%`
-                            }}
-                        />
-                    </div>
-                </div>
                 )}
 
                 {/* VIEW SWITCH */}

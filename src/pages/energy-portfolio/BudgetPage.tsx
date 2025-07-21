@@ -111,7 +111,6 @@ const BudgetCard: React.FC<{
     }
   };
 
-  /* --------------------------------- JSX --------------------------------- */
   return (
     <Card className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-0">
       <div className="flex flex-col sm:flex-row items-stretch">

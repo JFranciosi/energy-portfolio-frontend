@@ -27,26 +27,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-/* -------------------------------------------------------------------------- */
-/*                                  Tipi                                      */
-/* -------------------------------------------------------------------------- */
 interface Cliente {
   id: number;
-  username: string;
+  username: string;          // campo principale per nome+cognome
   email: string;
   tipologia: string;
-  stato: string;
-  telefono?: string;
+  telefono?: string;         // campo telefono unificato (da backend)
+  // lato frontend split prefisso e numero:
+  telefonoPrefisso?: string;
+  telefonoNumero?: string;
+
+  sedeLegale?: string;
+  pIva?: string;
+  paese?: string;
+  classeAgevolazione?: string;
+  codiceAteco?: string;
+  codiceAtecoSecondario?: string;
+  consumoAnnuoEnergia?: number;
+  fatturatoAnnuo?: number;
+
+  nome?: string; // campo temporaneo per modificare username
 }
 
-/* -------------------------------------------------------------------------- */
-/*                           Costanti di ambiente                             */
-/* -------------------------------------------------------------------------- */
 const PATH_DEV = "http://localhost:8081";
 
-/* -------------------------------------------------------------------------- */
-/*                           Componente principale                            */
-/* -------------------------------------------------------------------------- */
 const UserManagement: React.FC = () => {
   const [userRole] = useState<string>("Admin");
 
@@ -64,14 +68,33 @@ const UserManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteUser, setDeleteUser] = useState<Cliente | null>(null);
 
-  /* --------------------------- FETCH UTENTI --------------------------- */
+  // Fetch utenti e prepara split telefono (prefisso e numero)
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const res = await fetch(`${PATH_DEV}/cliente/list`, { credentials: "include" });
       if (!res.ok) throw new Error(`Errore caricamento utenti: ${res.statusText}`);
       const data: Cliente[] = await res.json();
-      setUserList(data);
+
+      // Split telefono in prefisso + numero per ogni user (esempio: "+39 3481234567")
+      const usersWithTelSplit = data.map(user => {
+        if (user.telefono) {
+          const parts = user.telefono.trim().split(" ");
+          if (parts.length >= 2) {
+            user.telefonoPrefisso = parts[0];
+            user.telefonoNumero = parts.slice(1).join(" ");
+          } else {
+            // fallback, se non è presente prefisso
+            user.telefonoPrefisso = "+39";
+            user.telefonoNumero = user.telefono;
+          }
+        }
+        // nome (form field) = username (campo backend)
+        user.nome = user.username;
+        return user;
+      });
+
+      setUserList(usersWithTelSplit);
     } catch (error: any) {
       Swal.fire("Errore", error.message || "Errore nel caricamento utenti", "error");
     } finally {
@@ -83,26 +106,35 @@ const UserManagement: React.FC = () => {
     fetchUsers();
   }, []);
 
-  /* --------------------------- DIALOG EDIT --------------------------- */
   const openEditDialog = (user: Cliente) => {
     setEditUser(user);
     setEditForm({ ...user });
     setEditDialogOpen(true);
   };
 
-  const handleEditChange = (field: keyof Cliente, value: string) => {
+  const handleEditChange = (field: keyof Cliente, value: string | number) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleEditSave = async () => {
     if (!editUser) return;
     try {
-      const { id, ...fieldsToUpdate } = editForm;
+      // Concateno prefisso + numero per campo telefono come stringa unica
+      const telefonoCompleto = (editForm.telefonoPrefisso ?? "+39") + " " + (editForm.telefonoNumero ?? "");
+
+      // Preparo payload mapping 'nome' -> 'username' e 'telefono' unificato
+      const { id, nome, telefonoPrefisso, telefonoNumero, ...rest } = editForm;
+      const payload = {
+        ...rest,
+        username: nome,
+        telefono: telefonoCompleto.trim(),
+      };
+
       const res = await fetch(`${PATH_DEV}/cliente/update/${editUser.id}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fieldsToUpdate),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error((await res.text()) || "Errore aggiornamento utente");
 
@@ -116,7 +148,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  /* ------------------------- DIALOG DELETE --------------------------- */
   const openDeleteDialog = (user: Cliente) => {
     setDeleteUser(user);
     setDeleteDialogOpen(true);
@@ -140,7 +171,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  /* ---------------------------- FILTRI ------------------------------- */
   const filteredUsers = useMemo(() => {
     return userList.filter((user) => {
       const matchEmail = filterEmail
@@ -155,9 +185,6 @@ const UserManagement: React.FC = () => {
     });
   }, [userList, filterEmail, filterUsername, filterTipologia]);
 
-  /* ------------------------------------------------------------------ */
-  /*                               RENDER                               */
-  /* ------------------------------------------------------------------ */
   return (
     <div className="container mx-auto max-w-7xl p-6">
       <h1 className="text-3xl font-bold text-primary mb-2">Gestione Utenti</h1>
@@ -165,11 +192,8 @@ const UserManagement: React.FC = () => {
         Visualizza, filtra, modifica o elimina gli utenti dal sistema.
       </p>
 
-      {/* --------------------------- Sezione filtri --------------------------- */}
       <div className="mb-8 rounded-lg bg-white shadow p-6">
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Email */}
           <div className="flex flex-col">
             <Label htmlFor="filterEmail" className="mb-1 text-sm font-medium">
               Email
@@ -183,7 +207,6 @@ const UserManagement: React.FC = () => {
             />
           </div>
 
-          {/* Username */}
           <div className="flex flex-col">
             <Label htmlFor="filterUsername" className="mb-1 text-sm font-medium">
               Nome utente
@@ -197,7 +220,6 @@ const UserManagement: React.FC = () => {
             />
           </div>
 
-          {/* Tipologia */}
           <div className="flex flex-col">
             <Label htmlFor="filterTipologia" className="mb-1 text-sm font-medium">
               Tipologia
@@ -216,7 +238,6 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* --------------------------- Tabella utenti --------------------------- */}
       <div className="rounded-lg bg-white shadow p-6">
         {loading ? (
           <p>Caricamento utenti…</p>
@@ -227,7 +248,6 @@ const UserManagement: React.FC = () => {
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Tipologia</TableHead>
-                <TableHead>Stato</TableHead>
                 <TableHead>Telefono</TableHead>
                 <TableHead className="text-center">Azioni</TableHead>
               </TableRow>
@@ -235,7 +255,7 @@ const UserManagement: React.FC = () => {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                  <TableCell colSpan={5} className="text-center py-6 text-gray-500">
                     Nessun utente trovato.
                   </TableCell>
                 </TableRow>
@@ -248,8 +268,7 @@ const UserManagement: React.FC = () => {
                     <TableCell>{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.tipologia}</TableCell>
-                    <TableCell>{user.stato}</TableCell>
-                    <TableCell>{user.telefono || "-"}</TableCell>
+                    <TableCell>{user.telefono ?? "-"}</TableCell>
                     <TableCell className="text-center space-x-2">
                       {userRole === "Admin" ? (
                         <>
@@ -284,26 +303,35 @@ const UserManagement: React.FC = () => {
         )}
       </div>
 
-      {/* --------------------------------------------------------------------- */}
-      {/*                         Modale modifica                               */}
-      {/* --------------------------------------------------------------------- */}
+      {/* Modale modifica */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Modifica Utente</DialogTitle>
+        <DialogContent
+          className="sm:max-w-4xl max-h-[80vh] overflow-y-auto rounded-lg shadow-lg"
+          style={{ display: "flex", flexDirection: "column" }}
+        >
+          <DialogHeader className="border-b border-gray-200">
+            <DialogTitle className="text-xl font-semibold">Modifica Utente</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-6 px-6 flex-grow">
+            {/* Username come nome e cognome unificato */}
             <div>
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="nome" className="mb-2 font-semibold text-gray-700">
+                Nome e Cognome
+              </Label>
               <Input
-                id="username"
-                value={editForm.username || ""}
-                onChange={(e) => handleEditChange("username", e.target.value)}
+                id="nome"
+                placeholder="es. mariorossi"
+                value={editForm.nome || ""}
+                onChange={(e) => handleEditChange("nome", e.target.value)}
               />
             </div>
+
+            {/* Email */}
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="mb-2 font-semibold text-gray-700">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -311,50 +339,149 @@ const UserManagement: React.FC = () => {
                 onChange={(e) => handleEditChange("email", e.target.value)}
               />
             </div>
-            <div>
-              <Label htmlFor="tipologia">Tipologia</Label>
-              <Select
-                value={editForm.tipologia || "Cliente"}
-                onValueChange={(v) => handleEditChange("tipologia", v)}
-                disabled
-              >
-                <SelectTrigger id="tipologia">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Cliente">Cliente</SelectItem>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Telefono: prefisso + numero */}
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <Label htmlFor="telefonoPrefisso" className="mb-2 font-semibold text-gray-700">
+                  Prefisso Telefonico
+                </Label>
+                <Select
+                  value={editForm.telefonoPrefisso || "+39"}
+                  onValueChange={(v) => handleEditChange("telefonoPrefisso", v)}
+                >
+                  <SelectTrigger id="telefonoPrefisso">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="+39">Italia (+39)</SelectItem>
+                    <SelectItem value="+34">Spagna (+34)</SelectItem>
+                    <SelectItem value="+33">Francia (+33)</SelectItem>
+                    <SelectItem value="+7">Russia (+7)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-2 flex-grow">
+                <Label htmlFor="telefonoNumero" className="mb-2 font-semibold text-gray-700">
+                  Numero Telefonico
+                </Label>
+                <Input
+                  id="telefonoNumero"
+                  value={editForm.telefonoNumero || ""}
+                  onChange={(e) => handleEditChange("telefonoNumero", e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="stato">Stato</Label>
-              <Select
-                value={editForm.stato || "IT"}
-                onValueChange={(v) => handleEditChange("stato", v)}
-              >
-                <SelectTrigger id="stato">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IT">Italia</SelectItem>
-                  <SelectItem value="FR">Francia</SelectItem>
-                  <SelectItem value="ES">Spagna</SelectItem>
-                  <SelectItem value="RU">Russia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="telefono">Telefono</Label>
-              <Input
-                id="telefono"
-                value={editForm.telefono || ""}
-                onChange={(e) => handleEditChange("telefono", e.target.value)}
-              />
-            </div>
+
+            {/* Campi extra solo per Cliente */}
+            {editForm.tipologia === "Cliente" && (
+              <>
+                <div>
+                  <Label htmlFor="sedeLegale" className="mb-2 font-semibold text-gray-700">
+                    Sede legale
+                  </Label>
+                  <Input
+                    id="sedeLegale"
+                    value={editForm.sedeLegale || ""}
+                    onChange={(e) => handleEditChange("sedeLegale", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pIva" className="mb-2 font-semibold text-gray-700">
+                    P.IVA
+                  </Label>
+                  <Input
+                    id="pIva"
+                    value={editForm.pIva || ""}
+                    onChange={(e) => handleEditChange("pIva", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="paese" className="mb-2 font-semibold text-gray-700">
+                    Paese
+                  </Label>
+                  <Select
+                    value={editForm.paese || "IT"}
+                    onValueChange={(v) => handleEditChange("paese", v)}
+                  >
+                    <SelectTrigger id="paese" className="mb-1 h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IT">Italia</SelectItem>
+                      <SelectItem value="FR">Francia</SelectItem>
+                      <SelectItem value="ES">Spagna</SelectItem>
+                      <SelectItem value="RU">Russia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="classeAgevolazione" className="mb-2 font-semibold text-gray-700">
+                    Classe Agevolazione
+                  </Label>
+                  <Select
+                    value={editForm.classeAgevolazione || "No Agevolazioni"}
+                    onValueChange={(v) => handleEditChange("classeAgevolazione", v)}
+                  >
+                    <SelectTrigger id="classeAgevolazione" className="mb-1 h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="No Agevolazioni">No Agevolazioni</SelectItem>
+                      <SelectItem value="Fat1">Fat1</SelectItem>
+                      <SelectItem value="Fat2">Fat2</SelectItem>
+                      <SelectItem value="Fat3">Fat3</SelectItem>
+                      <SelectItem value="Val">Val</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="codiceAteco" className="mb-2 font-semibold text-gray-700">
+                    Codice Ateco
+                  </Label>
+                  <Input
+                    id="codiceAteco"
+                    value={editForm.codiceAteco || ""}
+                    onChange={(e) => handleEditChange("codiceAteco", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="codiceAtecoSecondario" className="mb-2 font-semibold text-gray-700">
+                    Codice Ateco Secondario
+                  </Label>
+                  <Input
+                    id="codiceAtecoSecondario"
+                    value={editForm.codiceAtecoSecondario || ""}
+                    onChange={(e) => handleEditChange("codiceAtecoSecondario", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="consumoAnnuoEnergia" className="mb-2 font-semibold text-gray-700">
+                    Consumo Annuo Energia (kWh)
+                  </Label>
+                  <Input
+                    id="consumoAnnuoEnergia"
+                    type="number"
+                    value={editForm.consumoAnnuoEnergia ?? ""}
+                    onChange={(e) => handleEditChange("consumoAnnuoEnergia", Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="fatturatoAnnuo" className="mb-2 font-semibold text-gray-700">
+                    Fatturato Annuo (€)
+                  </Label>
+                  <Input
+                    id="fatturatoAnnuo"
+                    type="number"
+                    value={editForm.fatturatoAnnuo ?? ""}
+                    onChange={(e) => handleEditChange("fatturatoAnnuo", Number(e.target.value))}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 border-t border-gray-200 px-6 py-3 bg-white sticky bottom-0">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Annulla
             </Button>
@@ -363,24 +490,21 @@ const UserManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* --------------------------------------------------------------------- */}
-      {/*                      Modale conferma eliminazione                     */}
-      {/* --------------------------------------------------------------------- */}
+      {/* Modale conferma eliminazione */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center text-red-600">
+        <DialogContent className="sm:max-w-sm rounded-lg shadow-lg">
+          <DialogHeader className="border-b border-gray-200">
+            <DialogTitle className="flex items-center text-red-600 font-semibold text-lg">
               <AlertCircle className="h-5 w-5 mr-2" />
               Conferma Eliminazione
             </DialogTitle>
           </DialogHeader>
 
-          <div className="py-4">
-            Sei sicuro di voler eliminare{" "}
-            <strong>{deleteUser?.username}</strong>?
+          <div className="py-6 px-6 text-gray-700 text-center">
+            Sei sicuro di voler eliminare <strong>{deleteUser?.username}</strong>?
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 px-6 py-3 bg-white flex justify-end gap-3">
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Annulla
             </Button>
