@@ -58,10 +58,14 @@ const BudgetCard: React.FC<{
 }> = ({ data, idx, updateRow, podCode, anno, onSaveSuccess }) => {
   const [isSaving, setIsSaving] = useState(false);
 
-  const prezzoEnergia = data.prezzoEnergiaBase * (1 + data.prezzoEnergiaPerc / 100);
-  const consumi       = data.consumiBase       * (1 + data.consumiPerc       / 100);
-  const oneri         = data.oneriBase         * (1 + data.oneriPerc         / 100);
-  const spesaTotale   = prezzoEnergia * consumi + oneri;
+  // Prezzo energia come prezzo_energia_base diviso consumi_base, poi modificato dalla variazione %
+  const prezzoEnergia = data.consumiBase > 0
+    ? (data.prezzoEnergiaBase / data.consumiBase) * (1 + data.prezzoEnergiaPerc / 100)
+    : 0;
+
+  const consumi = data.consumiBase * (1 + data.consumiPerc / 100);
+  const oneri = data.oneriBase * (1 + data.oneriPerc / 100);
+  const spesaTotale = prezzoEnergia * consumi + oneri;
 
   /* ------------------------------ Save single ----------------------------- */
   const handleSave = async () => {
@@ -127,7 +131,7 @@ const BudgetCard: React.FC<{
             {[
               {
                 label: "Prezzo Energia",
-                baseValue: `${prezzoEnergia.toFixed(2)} €/kWh`,
+                baseValue: `${prezzoEnergia.toFixed(4)} €/kWh`,
                 percValue: data.prezzoEnergiaPerc,
               },
               {
@@ -281,61 +285,45 @@ const BudgetPage: React.FC = () => {
           return;
         }
 
-        /* Aggregazione sui 12 mesi */
+        /* Aggregazione con somma di consumi e oneri e prezzo energia singolo */
         const aggregatedData: MeseDati[] = MONTHS.map((meseNome, idx) => {
           const meseIndex = idx + 1;
 
-          let prezzoSum = 0, prezzoCount = 0;
           let consumiSum = 0;
-          let oneriSum   = 0;
-
-          let prezzoPercSum = 0, prezzoPercCount = 0;
-          let consumiPercSum = 0, consumiPercCount = 0;
-          let oneriPercSum   = 0, oneriPercCount   = 0;
+          let oneriSum = 0;
+          let prezzoEnergiaBaseSingolo: number | null = null;
+          let prezzoEnergiaPercSingolo: number | null = null;
 
           allDataPerPod.forEach(podData => {
             if (!podData) return;
             const rec = podData.find((d: any) => d.mese === meseIndex);
             if (rec) {
-              if (typeof rec.prezzoEnergiaBase === "number") {
-                prezzoSum += rec.prezzoEnergiaBase;
-                prezzoCount++;
+              if (prezzoEnergiaBaseSingolo === null && typeof rec.prezzoEnergiaBase === "number") {
+                prezzoEnergiaBaseSingolo = rec.prezzoEnergiaBase;
+                prezzoEnergiaPercSingolo = rec.prezzoEnergiaPerc;
               }
               if (typeof rec.consumiBase === "number") consumiSum += rec.consumiBase;
-              if (typeof rec.oneriBase   === "number") oneriSum   += rec.oneriBase;
-
-              if (typeof rec.prezzoEnergiaPerc === "number") {
-                prezzoPercSum += rec.prezzoEnergiaPerc;
-                prezzoPercCount++;
-              }
-              if (typeof rec.consumiPerc === "number") {
-                consumiPercSum += rec.consumiPerc;
-                consumiPercCount++;
-              }
-              if (typeof rec.oneriPerc === "number") {
-                oneriPercSum += rec.oneriPerc;
-                oneriPercCount++;
-              }
+              if (typeof rec.oneriBase === "number") oneriSum += rec.oneriBase;
             }
           });
 
-          const prezzoMedia     = prezzoCount > 0 ? prezzoSum / prezzoCount : 0.1;
-          const consumiBase     = consumiSum;
-          const oneriBase       = oneriSum;
-          const spesaTotale     = prezzoMedia * consumiBase + oneriBase;
+          const prezzoEnergiaBase = prezzoEnergiaBaseSingolo ?? 0.1;
+          const prezzoEnergiaPerc = prezzoEnergiaPercSingolo ?? 0;
 
-          const prezzoPercMedia = prezzoPercCount  > 0 ? prezzoPercSum  / prezzoPercCount  : 0;
-          const consumiPercMedia= consumiPercCount > 0 ? consumiPercSum / consumiPercCount : 0;
-          const oneriPercMedia  = oneriPercCount   > 0 ? oneriPercSum   / oneriPercCount   : 0;
+          const prezzoEnergia = consumiSum > 0
+            ? (prezzoEnergiaBase / consumiSum) * (1 + prezzoEnergiaPerc / 100)
+            : 0;
+
+          const spesaTotale = prezzoEnergia * consumiSum + oneriSum;
 
           return {
             mese: meseNome,
-            prezzoEnergiaPerc: prezzoPercMedia,
-            consumiPerc: consumiPercMedia,
-            oneriPerc: oneriPercMedia,
-            prezzoEnergiaBase: prezzoMedia,
-            consumiBase,
-            oneriBase,
+            prezzoEnergiaPerc: prezzoEnergiaPerc,
+            consumiPerc: 0,
+            oneriPerc: 0,
+            prezzoEnergiaBase: prezzoEnergiaBase,
+            consumiBase: consumiSum,
+            oneriBase: oneriSum,
             spesaTotale,
             editable: true,
           };
@@ -376,15 +364,28 @@ const BudgetPage: React.FC = () => {
         setHasData(true);
         setRows(MONTHS.map((m, idx) => {
           const rec = data.find((d: any) => d.mese === idx + 1);
+
+          // Calcolo prezzo energia come prezzo_energia_base / consumi_base * (1 + variazione)
+          const prezzoEnergiaBase = rec?.prezzoEnergiaBase ?? 0.1;
+          const consumiBase = rec?.consumiBase ?? 0;
+
+          const prezzoEnergia = consumiBase > 0
+            ? (prezzoEnergiaBase / consumiBase) * (1 + (rec?.prezzoEnergiaPerc ?? 0) / 100)
+            : 0;
+
+          const consumi = (rec?.consumiBase ?? 0) * (1 + (rec?.consumiPerc ?? 0) / 100);
+          const oneri = (rec?.oneriBase ?? 0) * (1 + (rec?.oneriPerc ?? 0) / 100);
+          const spesaTotale = prezzoEnergia * consumi + oneri;
+
           return {
             mese: m,
             prezzoEnergiaPerc: rec?.prezzoEnergiaPerc ?? 0,
             consumiPerc:       rec?.consumiPerc       ?? 0,
             oneriPerc:         rec?.oneriPerc         ?? 0,
-            prezzoEnergiaBase: rec?.prezzoEnergiaBase ?? 0.1,
-            consumiBase:       rec?.consumiBase       ?? 0,
+            prezzoEnergiaBase: prezzoEnergiaBase,
+            consumiBase,
             oneriBase:         rec?.oneriBase         ?? 0,
-            spesaTotale:       0,
+            spesaTotale,
             editable: true,
           };
         }));
