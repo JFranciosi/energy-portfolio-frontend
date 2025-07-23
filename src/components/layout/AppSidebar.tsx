@@ -96,8 +96,15 @@ export const AppSidebar = () => {
 
     // Definiamo i menu items con condizioni di accesso
     const menuItems = [
-        {title: 'Home', path: '/', icon: Home, visible: true},
-        {title: 'Energy Portfolio', path: '/energy-portfolio', icon: BarChart3, visible: accessoEffettuato},
+        { title: 'Home', path: '/', icon: Home, visible: true },
+
+        { title: 'Dashboard', path: '/energy-portfolio/dashboard', icon: BarChart3, visible: accessoEffettuato },
+        { title: 'Upload Bollette', path: '/energy-portfolio/upload', icon: FileText, visible: accessoEffettuato },
+        { title: 'Futures', path: '/energy-portfolio/futures', icon: Briefcase, visible: accessoEffettuato },
+        { title: 'Costi', path: '/energy-portfolio/costs', icon: DollarSign, visible: accessoEffettuato },
+        { title: 'Budget', path: '/budget', icon: BarChart3, visible: accessoEffettuato },
+
+        // Admin e gestione utenti
         {
             title: 'Crea Utente',
             path: '/energy-portfolio/create-user',
@@ -116,7 +123,8 @@ export const AppSidebar = () => {
             icon: User,
             visible: accessoEffettuato && categoriaUtente === 'Admin'
         },
-        {title: 'Profilo', path: '/profile', icon: User, visible: accessoEffettuato},
+
+        { title: 'Profilo', path: '/profile', icon: User, visible: accessoEffettuato },
     ];
 
     return (

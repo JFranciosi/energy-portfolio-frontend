@@ -31,6 +31,8 @@ import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
 import CookiePolicyPage from "./pages/legal/CookiePolicyPage";
 import GdprRequestPage from "./pages/legal/GdprRequestPage";
 import { CookieBanner } from "./components/legal/CookieBanner";
+import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +51,8 @@ const App = () => (
             <Route path="/services" element={<Layout><ServicesPage /></Layout>} />
             <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
             <Route path="/auth" element={<Layout><AuthPage /></Layout>} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Energy Portfolio */}
             <Route path="/energy-portfolio" element={<Layout><EnergyPortfolioPage /></Layout>} />
