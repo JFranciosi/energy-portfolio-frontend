@@ -27,6 +27,7 @@ import { Check, Edit, Lock, Mail, User, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LegalFooter } from '@/components/legal/LegalFooter';
 
 interface UserData {
   codiceAtecoSecondario: string | number;
@@ -740,6 +741,8 @@ const handlePasswordSubmit = async (values: z.infer<typeof passwordSchema>) => {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Footer */}
+      <LegalFooter/>
     </div>
   );
 };
