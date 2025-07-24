@@ -356,41 +356,40 @@ const UploadBillsPage = () => {
         } catch (error) { }
     };
 
-    const downloadFile = async (id: string, name: string) => {
-        try {
-            const response = await axios.get(`${PATH_DEV}/files/${id}/download`, {
-                responseType: 'blob',
-            });
-            const contentDisposition = response.headers['content-disposition'];
-            const fileName = contentDisposition
-                ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-                : name.replace(/\.pdf$/i, '.xlsx');
+const downloadFile = async (id: string, name: string) => {
+    try {
+        const response = await axios.get(`${PATH_DEV}/files/${id}/download`, {
+            responseType: 'blob',
+        });
+        const contentDisposition = response.headers['content-disposition'];
+        const fileName = contentDisposition
+            ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+            : name;
 
-            const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+        const blob = new Blob([response.data], {
+            type: 'application/pdf'
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
 
-            // Swal alert dopo download
-            Swal.fire({
-                icon: 'success',
-                title: 'Download completato',
-                text: `Il file "${fileName}" è stato scaricato con successo.`,
-                timer: 2500,
-                timerProgressBar: true,
-                showConfirmButton: false,
-            });
-        } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Errore', text: 'Impossibile scaricare il file' });
-        }
-    };
+        Swal.fire({
+            icon: 'success',
+            title: 'Download completato',
+            text: `Il file "${fileName}" è stato scaricato con successo.`,
+            timer: 2500,
+            timerProgressBar: true,
+            showConfirmButton: false,
+        });
+    } catch (error) {
+        Swal.fire({ icon: 'error', title: 'Errore', text: 'Impossibile scaricare il file' });
+    }
+};
 
     // Ordinamento
     const handleSort = (column: string) => {
