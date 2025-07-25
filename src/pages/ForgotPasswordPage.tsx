@@ -20,7 +20,7 @@ const ForgotPasswordPage = () => {
     setError('');
 
     try {
-      const response = await fetch(`${PATH}/auth/forgot-password`, {
+      const response = await fetch(`${PATH}/Autentication/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -34,8 +34,6 @@ const ForgotPasswordPage = () => {
           timer: 3000,
           timerProgressBar: true,
           showConfirmButton: false,
-          background: '#f0f9ff',
-          color: '#0369a1',
         });
         setEmail('');
       } else {

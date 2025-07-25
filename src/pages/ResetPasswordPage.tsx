@@ -28,7 +28,7 @@ const ResetPasswordPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8081/auth/reset-password", {
+      const res = await fetch("http://localhost:8081/Autentication/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
