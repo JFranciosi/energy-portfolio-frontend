@@ -71,10 +71,10 @@ const App = () => (
             <Route path="/user-management" element={<Layout><UserManagement /></Layout>} />
 
             {/* Legal */}
-            <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />
-            <Route path="/terms-conditions" element={<Layout><TermsConditionsPage /></Layout>} />
-            <Route path="/cookie-policy" element={<Layout><CookiePolicyPage /></Layout>} />
-            <Route path="/gdpr-request" element={<Layout><GdprRequestPage /></Layout>} />
+            <Route path="/privacy-policy" element={<LayoutPublic><PrivacyPolicyPage /></LayoutPublic>} />
+            <Route path="/terms-conditions" element={<LayoutPublic><TermsConditionsPage /></LayoutPublic>} />
+            <Route path="/cookie-policy" element={<LayoutPublic><CookiePolicyPage /></LayoutPublic>} />
+            <Route path="/gdpr-request" element={<LayoutPublic><GdprRequestPage /></LayoutPublic>} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
