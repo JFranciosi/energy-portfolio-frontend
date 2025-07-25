@@ -14,7 +14,7 @@ import {
     SidebarTrigger
 } from '@/components/ui/sidebar';
 import {Logo} from '@/components/logo';
-import {Home, Mail, Briefcase, User, LogIn, BarChart3, FileText, LogOut, DollarSign} from 'lucide-react';
+import {Mail, Briefcase, User, LogIn, BarChart3, FileText, LogOut, DollarSign} from 'lucide-react';
 import {useIsMobile} from '@/hooks/use-mobile';
 import {Button} from '@/components/ui/button';
 
@@ -96,7 +96,6 @@ export const AppSidebar = () => {
 
     // Definiamo i menu items con condizioni di accesso
     const menuItems = [
-        { title: 'Home', path: '/', icon: Home, visible: true },
 
         { title: 'Dashboard', path: '/energy-portfolio/dashboard', icon: BarChart3, visible: accessoEffettuato },
         { title: 'Upload Bollette', path: '/energy-portfolio/upload', icon: FileText, visible: accessoEffettuato },

@@ -33,6 +33,7 @@ import GdprRequestPage from "./pages/legal/GdprRequestPage";
 import { CookieBanner } from "./components/legal/CookieBanner";
 import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.tsx";
+import LayoutPublic from "./components/layout/LayoutPublic.tsx";
 
 const queryClient = new QueryClient();
 
@@ -46,11 +47,13 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Main Routes */}
-            <Route path="/" element={<Layout><HomePage /></Layout>} />
-            <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-            <Route path="/services" element={<Layout><ServicesPage /></Layout>} />
+            <Route path="/" element={<LayoutPublic><HomePage /></LayoutPublic>} />
+            <Route path="/contact" element={<LayoutPublic><ContactPage /></LayoutPublic>} />
+            <Route path="/services" element={<LayoutPublic><ServicesPage /></LayoutPublic>} />            
+            <Route path="/auth" element={<LayoutPublic><AuthPage /></LayoutPublic>} />
+            
+            {/* User Profile and Authentication */}
             <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
-            <Route path="/auth" element={<Layout><AuthPage /></Layout>} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 

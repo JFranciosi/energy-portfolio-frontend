@@ -18,7 +18,7 @@ const AppNavbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
             <img
-              src="/lovable-uploads/65bdb6ec-773a-41d8-8eb0-f44eb4b3222d.png"
+              src="/lovable-uploads/f33dc69c-12e2-4b05-a3eb-b3073381d202.png"
               alt="Mies - your daily energy!"
               className="h-8 w-auto"
             />
