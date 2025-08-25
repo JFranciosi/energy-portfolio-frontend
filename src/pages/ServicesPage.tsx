@@ -74,7 +74,7 @@ const ServicesPage = () => {
     },
     {
       id: 'performance',
-      title: 'ENERGY PERFORMANCE CONTRACT',
+      title: 'PERFORMANCE CONTRACT',
       icon: FileText,
       description: 'Contratti con garanzia sui risparmi energetici',
       features: [
@@ -148,6 +148,7 @@ const ServicesPage = () => {
 
   return (
     <div>
+      {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-blue-400 py-16 text-white">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
@@ -160,149 +161,71 @@ const ServicesPage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* I Nostri Servizzi */}
+      <section className="container mx-auto px-6 py-16">
+        <Tabs defaultValue="diagnosi" className="w-full">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8 h-auto">
             {services.map((service) => (
-              <Card
+              <TabsTrigger
                 key={service.id}
-                className="flex flex-col h-full border-l-4 border-l-primary hover:shadow-lg transition-shadow duration-300"
+                value={service.id}
+                className="text-xs whitespace-nowrap px-2 py-3"
               >
+                {service.title.split(' ')[0]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {services.map((service) => (
+            <TabsContent key={service.id} value={service.id} className="mt-8">
+              <Card className="border-none shadow-lg">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="bg-primary/10 p-3 rounded-lg mb-4">
-                      <service.icon className="h-8 w-8 text-primary" />
+                  <div className="flex items-center gap-4 mb-4">
+                    <service.icon className="h-10 w-10 text-primary" />
+                    <div>
+                      <CardTitle className="text-2xl">{service.title}</CardTitle>
+                      <p className="text-muted-foreground">{service.description}</p>
                     </div>
                   </div>
-                  <CardTitle className="text-xl font-bold text-primary">{service.title}</CardTitle>
-                  <p className="text-muted-foreground text-sm">{service.description}</p>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <div className="space-y-4">
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                      <h4 className="font-semibold mb-2 text-sm">Caratteristiche:</h4>
-                      <ul className="space-y-1">
-                        {service.features.slice(0, 3).map((feature, i) => (
-                          <li key={i} className="text-xs text-muted-foreground flex items-start">
-                            <Check className="h-3 w-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                            {feature}
+                      <h4 className="font-bold text-lg mb-4 text-primary">Caratteristiche del Servizio</h4>
+                      <ul className="space-y-3">
+                        {service.features.map((feature, i) => (
+                          <li key={i} className="flex items-start">
+                            <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{feature}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     <div>
-                      <h4 className="font-semibold mb-2 text-sm">Benefici:</h4>
-                      <ul className="space-y-1">
-                        {service.benefits.slice(0, 2).map((benefit, i) => (
-                          <li key={i} className="text-xs text-muted-foreground flex items-start">
-                            <ArrowRight className="h-3 w-3 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
-                            {benefit}
+                      <h4 className="font-bold text-lg mb-4 text-primary">Benefici per la Tua Azienda</h4>
+                      <ul className="space-y-3">
+                        {service.benefits.map((benefit, i) => (
+                          <li key={i} className="flex items-start">
+                            <ArrowRight className="h-5 w-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{benefit}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link to="/contact">Richiedi informazioni</Link>
+                <CardFooter className="flex gap-4">
+                  <Button asChild className="flex-1">
+                    <Link to="/contact">Richiedi preventivo</Link>
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    Scarica brochure
                   </Button>
                 </CardFooter>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-muted">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold text-primary text-center mb-12">Approfondimenti sui Servizi</h2>
-            <Tabs defaultValue="diagnosi" className="w-full">
-              <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8 h-auto">
-                {services.map((service) => (
-                  <TabsTrigger
-                    key={service.id}
-                    value={service.id}
-                    className="text-xs whitespace-nowrap px-2 py-3"
-                  >
-                    {service.title.split(' ')[0]}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {services.map((service) => (
-                <TabsContent key={service.id} value={service.id} className="mt-8">
-                  <Card className="border-none shadow-lg">
-                    <CardHeader>
-                      <div className="flex items-center gap-4 mb-4">
-                        <service.icon className="h-10 w-10 text-primary" />
-                        <div>
-                          <CardTitle className="text-2xl">{service.title}</CardTitle>
-                          <p className="text-muted-foreground">{service.description}</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                          <h4 className="font-bold text-lg mb-4 text-primary">Caratteristiche del Servizio</h4>
-                          <ul className="space-y-3">
-                            {service.features.map((feature, i) => (
-                              <li key={i} className="flex items-start">
-                                <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                                <span className="text-sm">{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg mb-4 text-primary">Benefici per la Tua Azienda</h4>
-                          <ul className="space-y-3">
-                            {service.benefits.map((benefit, i) => (
-                              <li key={i} className="flex items-start">
-                                <ArrowRight className="h-5 w-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
-                                <span className="text-sm">{benefit}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex gap-4">
-                      <Button asChild className="flex-1">
-                        <Link to="/contact">Richiedi preventivo</Link>
-                      </Button>
-                      <Button variant="outline" className="flex-1">
-                        Scarica brochure
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gradient-to-r from-primary to-blue-400 text-white">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-4">Pronto a ottimizzare la tua efficienza energetica?</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            I nostri esperti sono a tua disposizione per una consulenza personalizzata 
-            e gratuita sui servizi più adatti alle tue esigenze.
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
-              <Link to="/contact" className="flex items-center gap-2">
-                Richiedi consulenza gratuita <ArrowRight size={16} />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
-              <Link to="/auth">Accedi area clienti</Link>
-            </Button>
-          </div>
-        </div>
+            </TabsContent>
+          ))}
+        </Tabs>
       </section>
     </div>
   );

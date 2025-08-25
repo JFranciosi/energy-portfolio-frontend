@@ -26,7 +26,6 @@ const HomePage: React.FC = () => {
         'Strumenti: soluzioni ad alta efficienza, ottimizzazione gestionale, monitoraggio consumi, ISO 50001',
       ],
     },
-    // ... altri servizi
   ];
 
   return (
@@ -35,44 +34,27 @@ const HomePage: React.FC = () => {
         <section className="relative bg-gradient-to-r from-primary to-blue-400 h-[50vh] min-h-[400px] flex items-center">
           <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
           <div className="max-w-[1920px] w-full mx-auto px-6 z-10">
-            <div className="flex items-center justify-between w-full">
-              <div className="max-w-2xl">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                  Gestione Energetica Intelligente per la Tua Azienda
-                </h1>
-                <p className="text-xl text-white/90 mb-8">
-                  Ottimizza i consumi, riduci i costi e l&apos;impatto ambientale con le nostre soluzioni avanzate
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    <Link to="/contact">Contattaci</Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-                  >
-                    <Link to="/services">Scopri i Servizi</Link>
-                  </Button>
-                </div>
-              </div>
-              <div className="hidden md:flex">
-                <div className="relative w-48 h-48 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
-                  <img
-                    src="/lovable-uploads/f33dc69c-12e2-4b05-a3eb-b3073381d202.png"
-                    alt="Mies Logo"
-                    className="w-36 h-auto"
-                  />
-                </div>
+            <div className="flex items-center justify-center gap-[400px] w-full">
+            <div className="max-w-2xl">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Gestione Energetica Intelligente per la Tua Azienda
+              </h1>
+              <p className="text-xl text-white/90 mb-8">
+                Ottimizza i consumi, riduci i costi e l&apos;impatto ambientale con le nostre soluzioni avanzate
+              </p>
+            </div>
+            <div className="hidden md:flex">
+              <div className="relative w-48 h-48 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
+                <img
+                  src="/lovable-uploads/f33dc69c-12e2-4b05-a3eb-b3073381d202.png"
+                  alt="Mies Logo"
+                  className="w-36 h-auto"
+                />
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* CHI SIAMO */}
         <section className="py-16 bg-background">
@@ -128,8 +110,8 @@ const HomePage: React.FC = () => {
               Contattaci oggi stesso per una consulenza gratuita e scopri come possiamo aiutare la tua azienda a ottimizzare i consumi energetici.
             </p>
             <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
-              <Link to="/auth" className="flex items-center gap-2">
-                Registrati ora <ArrowRight size={16} />
+              <Link to="/Contact" className="flex items-center gap-2">
+                Contattami ora <ArrowRight size={16} />
               </Link>
             </Button>
           </div>

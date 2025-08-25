@@ -21,7 +21,6 @@ export function Logo({ className, collapsed = false, variant = 'default' }: Logo
       />
       {!collapsed && (
         <span className={cn("ml-2 font-semibold text-lg", textColor)}>
-          Mies
         </span>
       )}
     </div>

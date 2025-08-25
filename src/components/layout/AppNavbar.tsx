@@ -20,7 +20,7 @@ const AppNavbar: React.FC = () => {
             <img
               src="/lovable-uploads/f33dc69c-12e2-4b05-a3eb-b3073381d202.png"
               alt="Mies - your daily energy!"
-              className="h-8 w-auto"
+              className="h-16 w-auto"
             />
           </Link>
 
