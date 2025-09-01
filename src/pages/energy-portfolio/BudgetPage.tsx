@@ -76,6 +76,7 @@ const BudgetCard: React.FC<{
   onLocalPersist: (monthIndex1Based: number, payload: LocalCacheMonth) => void;
 }> = ({ data, idx, updateRow, podCode, anno, onSaveSuccess, onLocalPersist }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const isAllAggregate = podCode === "ALL"; // <- controllo se siamo su tutte le sedi
 
   // €/kWh corrente = (spesa base / kWh base) * (1 + %prezzo)
   const prezzoEnergia = data.consumiBase > 0
@@ -87,86 +88,30 @@ const BudgetCard: React.FC<{
   const spesaTotale = prezzoEnergia * consumi + oneri;
 
   const handleSave = async () => {
+    if (isAllAggregate) return; // su ALL non si salva
     setIsSaving(true);
     try {
-      if (podCode === "ALL") {
-        const payload = {
-          utenteId: 1,
-          podId: podCode,
-          anno,
-          mese: idx + 1,
-          prezzoEnergiaBase: data.prezzoEnergiaBase,
-          consumiBase: data.consumiBase,
-          oneriBase: data.oneriBase,
-          prezzoEnergiaPerc: data.prezzoEnergiaPerc,
-          consumiPerc: data.consumiPerc,
-          oneriPerc: data.oneriPerc,
-        };
+      // POD singolo: salvo solo le %
+      const payload = {
+        prezzoEnergiaPerc: data.prezzoEnergiaPerc,
+        consumiPerc: data.consumiPerc,
+        oneriPerc: data.oneriPerc,
+      };
+      const url = `${PATH}/budget/previsioni?pod=${encodeURIComponent(podCode)}&anno=${anno}&mese=${idx + 1}`;
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        let res = await fetch(`${PATH}/budget/all?anno=${anno}&mese=${idx + 1}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok && (res.status === 404 || res.status === 405)) {
-          res = await fetch(`${PATH}/budget/all`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-        }
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          if (res.status === 409 || /Duplicate entry/i.test(text)) {
-            const res2 = await fetch(`${PATH}/budget/all?anno=${anno}&mese=${idx + 1}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify(payload),
-            });
-            if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
-          } else {
-            throw new Error(`HTTP ${res.status}`);
-          }
-        }
-
-        // Persisto tutto in cache locale
-        onLocalPersist(idx + 1, {
-          prezzoEnergiaPerc: data.prezzoEnergiaPerc,
-          consumiPerc: data.consumiPerc,
-          oneriPerc: data.oneriPerc,
-          prezzoEnergiaBase: data.prezzoEnergiaBase,
-          consumiBase: data.consumiBase,
-          oneriBase: data.oneriBase,
-          ts: Date.now(),
-        });
-      } else {
-        // POD singolo: salvo solo le %
-        const payload = {
-          prezzoEnergiaPerc: data.prezzoEnergiaPerc,
-          consumiPerc: data.consumiPerc,
-          oneriPerc: data.oneriPerc,
-        };
-        const url = `${PATH}/budget/previsioni?pod=${encodeURIComponent(podCode)}&anno=${anno}&mese=${idx + 1}`;
-        const res = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        onLocalPersist(idx + 1, {
-          prezzoEnergiaPerc: data.prezzoEnergiaPerc,
-          consumiPerc: data.consumiPerc,
-          oneriPerc: data.oneriPerc,
-          ts: Date.now(),
-        });
-      }
+      onLocalPersist(idx + 1, {
+        prezzoEnergiaPerc: data.prezzoEnergiaPerc,
+        consumiPerc: data.consumiPerc,
+        oneriPerc: data.oneriPerc,
+        ts: Date.now(),
+      });
 
       Swal.fire({ icon: "success", title: "Salvato", timer: 1200, showConfirmButton: false });
       await onSaveSuccess();
@@ -246,11 +191,20 @@ const BudgetCard: React.FC<{
 
           <Button
             size="sm"
-            onClick={handleSave}
-            disabled={isSaving || !data.editable}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow mt-auto disabled:opacity-50"
+            onClick={isAllAggregate ? undefined : handleSave}
+            disabled={isAllAggregate || isSaving || !data.editable}
+            className={`mt-auto shadow disabled:opacity-50 ${
+              isAllAggregate
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+            title={isAllAggregate ? "Su Tutte le sedi il salvataggio è disabilitato. Modifica i singoli POD: l’aggregato si aggiorna da solo." : undefined}
           >
-            {isSaving ? <span className="animate-pulse">Salvataggio…</span> : "Salva"}
+            {isAllAggregate
+              ? "Salva"
+              : isSaving
+                ? <span className="animate-pulse">Salvataggio…</span>
+                : "Salva"}
           </Button>
         </div>
       </div>
