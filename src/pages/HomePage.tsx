@@ -34,7 +34,7 @@ const HomePage: React.FC = () => {
         <section className="relative bg-gradient-to-r from-primary to-blue-400 h-[50vh] min-h-[400px] flex items-center">
           <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
           <div className="max-w-[1920px] w-full mx-auto px-6 z-10">
-            <div className="flex items-center justify-center gap-[400px] w-full">
+          <div className="flex items-center justify-between w-full">
             <div className="max-w-2xl">
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Gestione Energetica Intelligente per la Tua Azienda

@@ -18,7 +18,6 @@ import Layout from "./components/layout/Layout";
 import EnergyPortfolioPage from "./pages/energy-portfolio/EnergyPortfolioPage";
 import UploadBillsPage from "./pages/energy-portfolio/UploadBillsPage";
 import FuturesPage from "./pages/energy-portfolio/FuturesPage";
-import CostsPage from "./pages/energy-portfolio/CostsPage";
 import DashboardPage from "./pages/energy-portfolio/DashboardPage";
 import BudgetPage from "@/pages/energy-portfolio/BudgetPage";
 
@@ -61,7 +60,6 @@ const App = () => (
             <Route path="/energy-portfolio" element={<Layout><EnergyPortfolioPage /></Layout>} />
             <Route path="/energy-portfolio/upload" element={<Layout><UploadBillsPage /></Layout>} />
             <Route path="/energy-portfolio/futures" element={<Layout><FuturesPage /></Layout>} />
-            <Route path="/energy-portfolio/costs" element={<Layout><CostsPage /></Layout>} />
             <Route path="/energy-portfolio/dashboard" element={<Layout><DashboardPage /></Layout>} />
             <Route path="/budget" element={<Layout><BudgetPage /></Layout>} />
 

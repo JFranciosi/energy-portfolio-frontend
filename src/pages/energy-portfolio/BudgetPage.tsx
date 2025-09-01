@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { SecondaryNavbar, type NavItem } from "@/components/energy-portfolio/SecondaryNavbar";
 import { NotesSection } from "@/components/energy-portfolio/NotesSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,10 +13,10 @@ interface MeseDati {
   prezzoEnergiaPerc: number;
   consumiPerc: number;
   oneriPerc: number;
-  prezzoEnergiaBase: number;
-  consumiBase: number;
-  oneriBase: number;
-  spesaTotale: number;
+  prezzoEnergiaBase: number; // € spesa energia "base"
+  consumiBase: number;       // kWh "base"
+  oneriBase: number;         // € "base"
+  spesaTotale: number;       // € calcolata
   editable: boolean;
 }
 
@@ -24,6 +24,24 @@ export interface PodInfo {
   id: string;
   sede?: string;
 }
+
+type LocalCacheMonth = {
+  prezzoEnergiaPerc?: number;
+  consumiPerc?: number;
+  oneriPerc?: number;
+  prezzoEnergiaBase?: number;
+  consumiBase?: number;
+  oneriBase?: number;
+  ts: number;
+};
+
+type LocalCache = {
+  [podId: string]: {
+    [year: number]: {
+      [month: number]: LocalCacheMonth;
+    };
+  };
+};
 
 const PATH   = "http://localhost:8081";
 const YEARS  = Array.from({ length: 8 }, (_, i) => 2023 + i);
@@ -55,10 +73,11 @@ const BudgetCard: React.FC<{
   podCode: string;
   anno: number;
   onSaveSuccess: () => Promise<void>;
-}> = ({ data, idx, updateRow, podCode, anno, onSaveSuccess }) => {
+  onLocalPersist: (monthIndex1Based: number, payload: LocalCacheMonth) => void;
+}> = ({ data, idx, updateRow, podCode, anno, onSaveSuccess, onLocalPersist }) => {
   const [isSaving, setIsSaving] = useState(false);
 
-  // Prezzo energia come prezzo_energia_base diviso consumi_base, poi modificato dalla variazione %
+  // €/kWh corrente = (spesa base / kWh base) * (1 + %prezzo)
   const prezzoEnergia = data.consumiBase > 0
     ? (data.prezzoEnergiaBase / data.consumiBase) * (1 + data.prezzoEnergiaPerc / 100)
     : 0;
@@ -67,12 +86,11 @@ const BudgetCard: React.FC<{
   const oneri = data.oneriBase * (1 + data.oneriPerc / 100);
   const spesaTotale = prezzoEnergia * consumi + oneri;
 
-  /* ------------------------------ Save single ----------------------------- */
   const handleSave = async () => {
     setIsSaving(true);
     try {
       if (podCode === "ALL") {
-        const body = {
+        const payload = {
           utenteId: 1,
           podId: podCode,
           anno,
@@ -84,14 +102,50 @@ const BudgetCard: React.FC<{
           consumiPerc: data.consumiPerc,
           oneriPerc: data.oneriPerc,
         };
-        const res = await fetch(`${PATH}/budget/all`, {
-          method: "POST",
+
+        let res = await fetch(`${PATH}/budget/all?anno=${anno}&mese=${idx + 1}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(body),
+          body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        if (!res.ok && (res.status === 404 || res.status === 405)) {
+          res = await fetch(`${PATH}/budget/all`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+        }
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          if (res.status === 409 || /Duplicate entry/i.test(text)) {
+            const res2 = await fetch(`${PATH}/budget/all?anno=${anno}&mese=${idx + 1}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify(payload),
+            });
+            if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+          } else {
+            throw new Error(`HTTP ${res.status}`);
+          }
+        }
+
+        // Persisto tutto in cache locale
+        onLocalPersist(idx + 1, {
+          prezzoEnergiaPerc: data.prezzoEnergiaPerc,
+          consumiPerc: data.consumiPerc,
+          oneriPerc: data.oneriPerc,
+          prezzoEnergiaBase: data.prezzoEnergiaBase,
+          consumiBase: data.consumiBase,
+          oneriBase: data.oneriBase,
+          ts: Date.now(),
+        });
       } else {
+        // POD singolo: salvo solo le %
         const payload = {
           prezzoEnergiaPerc: data.prezzoEnergiaPerc,
           consumiPerc: data.consumiPerc,
@@ -105,7 +159,15 @@ const BudgetCard: React.FC<{
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        onLocalPersist(idx + 1, {
+          prezzoEnergiaPerc: data.prezzoEnergiaPerc,
+          consumiPerc: data.consumiPerc,
+          oneriPerc: data.oneriPerc,
+          ts: Date.now(),
+        });
       }
+
       Swal.fire({ icon: "success", title: "Salvato", timer: 1200, showConfirmButton: false });
       await onSaveSuccess();
     } catch (err: any) {
@@ -118,7 +180,7 @@ const BudgetCard: React.FC<{
   return (
     <Card className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-0">
       <div className="flex flex-col sm:flex-row items-stretch">
-        {/* -------------------------- Lato sinistro -------------------------- */}
+        {/* Sinistra */}
         <div className="flex-1 p-4">
           <CardHeader className="p-0 pb-2 border-b border-gray-100 bg-white">
             <div className="flex items-center space-x-3">
@@ -129,21 +191,9 @@ const BudgetCard: React.FC<{
 
           <CardContent className="p-0 pt-4 flex flex-col gap-6">
             {[
-              {
-                label: "Prezzo Energia",
-                baseValue: `${prezzoEnergia.toFixed(4)} €/kWh`,
-                percValue: data.prezzoEnergiaPerc,
-              },
-              {
-                label: "Consumi",
-                baseValue: `${consumi.toFixed(2)} kWh`,
-                percValue: data.consumiPerc,
-              },
-              {
-                label: "Oneri",
-                baseValue: euroFormatter.format(oneri),
-                percValue: data.oneriPerc,
-              },
+              { label: "Prezzo Energia", baseValue: `${prezzoEnergia.toFixed(4)} €/kWh`, percValue: data.prezzoEnergiaPerc },
+              { label: "Consumi",        baseValue: `${consumi.toFixed(2)} kWh`,         percValue: data.consumiPerc },
+              { label: "Oneri",          baseValue: euroFormatter.format(oneri),         percValue: data.oneriPerc },
             ].map(({ label, baseValue, percValue }) => (
               <div key={label} className="flex items-center justify-between gap-6">
                 <div className="flex flex-col">
@@ -165,7 +215,7 @@ const BudgetCard: React.FC<{
           </CardContent>
         </div>
 
-        {/* -------------------------- Lato destro --------------------------- */}
+        {/* Destra */}
         <div className="flex-2 flex flex-col justify-center p-5 gap-12 border-l border-gray-100 bg-gray-50 pt-12">
           {["prezzoEnergiaPerc", "consumiPerc", "oneriPerc"].map(field => {
             const value = data[field as keyof MeseDati] as number;
@@ -175,11 +225,9 @@ const BudgetCard: React.FC<{
             return (
               <div key={field} className="flex flex-col gap-2">
                 <Label className="block text-sm font-medium mb-1">
-                  {field === "prezzoEnergiaPerc"
-                    ? "Prezzo Energia (%)"
-                    : field === "consumiPerc"
-                    ? "Consumi (%)"
-                    : "Oneri (%)"}
+                  {field === "prezzoEnergiaPerc" ? "Prezzo Energia (%)" :
+                   field === "consumiPerc"       ? "Consumi (%)" :
+                                                    "Oneri (%)"}
                 </Label>
                 <input
                   type="range"
@@ -187,15 +235,10 @@ const BudgetCard: React.FC<{
                   max={100}
                   step={1}
                   value={value}
-                  onChange={e => updateRow(idx, field as any, parseInt(e.target.value))}
+                  onChange={e => updateRow(idx, field as any, Number(e.target.value))}
                   className="w-full h-3 rounded-lg cursor-pointer"
-                  style={{
-                    background: bg,
-                    WebkitAppearance: "none",
-                    MozAppearance: "none",
-                    appearance: "none",
-                    accentColor: "#2563eb",
-                  }}
+                  disabled={!data.editable}
+                  style={{ background: bg, WebkitAppearance: "none", MozAppearance: "none", appearance: "none", accentColor: "#2563eb" }}
                 />
               </div>
             );
@@ -204,8 +247,8 @@ const BudgetCard: React.FC<{
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow mt-auto"
+            disabled={isSaving || !data.editable}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow mt-auto disabled:opacity-50"
           >
             {isSaving ? <span className="animate-pulse">Salvataggio…</span> : "Salva"}
           </Button>
@@ -222,106 +265,301 @@ const BudgetPage: React.FC = () => {
   const [activeTab, setActiveTab]   = useState<TabId>("pbi");
   const [podOptions, setPodOptions] = useState<PodInfo[]>([]);
   const [pod, setPod]               = useState<PodInfo | null>(null);
-  const [anno, setAnno]             = useState(2025);
+  const [anno, setAnno]             = useState<number>(new Date().getFullYear());
 
-  const [rows, setRows] = useState<MeseDati[]>(() =>
+  const [rows, setRows]   = useState<MeseDati[]>([]);
+  const [hasData, setHasData] = useState(true);
+
+  // Cache locale
+  const localCacheRef = useRef<LocalCache>({});
+
+  const putLocalCache = useCallback((podId: string, year: number, month: number, patch: LocalCacheMonth) => {
+    if (!localCacheRef.current[podId]) localCacheRef.current[podId] = {};
+    if (!localCacheRef.current[podId][year]) localCacheRef.current[podId][year] = {};
+    const prev = localCacheRef.current[podId][year][month] || { ts: 0 };
+    if (!prev.ts || (patch.ts ?? Date.now()) >= prev.ts) {
+      localCacheRef.current[podId][year][month] = { ...prev, ...patch, ts: patch.ts ?? Date.now() };
+    }
+  }, []);
+
+  const getLocalCache = useCallback((podId: string, year: number, month: number): LocalCacheMonth | undefined => {
+    return localCacheRef.current[podId]?.[year]?.[month];
+  }, []);
+
+  const applyLocalOverlayToArray = useCallback((arr: any[], podId: string, year: number) => {
+    return (arr || []).map((rec: any) => {
+      const month = Number(rec?.mese);
+      const lc = getLocalCache(podId, year, month);
+      if (!lc) return rec;
+      return {
+        ...rec,
+        prezzoEnergiaPerc: lc.prezzoEnergiaPerc ?? rec.prezzoEnergiaPerc,
+        consumiPerc:       lc.consumiPerc       ?? rec.consumiPerc,
+        oneriPerc:         lc.oneriPerc         ?? rec.oneriPerc,
+        prezzoEnergiaBase: lc.prezzoEnergiaBase ?? rec.prezzoEnergiaBase,
+        consumiBase:       lc.consumiBase       ?? rec.consumiBase,
+        oneriBase:         lc.oneriBase         ?? rec.oneriBase,
+      };
+    });
+  }, [getLocalCache]);
+
+  const emptyRows = () =>
     MONTHS.map(m => ({
       mese: m,
       prezzoEnergiaPerc: 0,
       consumiPerc: 0,
       oneriPerc: 0,
-      prezzoEnergiaBase: 0.1,
-      consumiBase: 1000,
-      oneriBase: 500,
+      prezzoEnergiaBase: 0,
+      consumiBase: 0,
+      oneriBase: 0,
       spesaTotale: 0,
-      editable: true,
-    }))
-  );
-  const [hasData, setHasData] = useState(true);
+      editable: false,
+    }));
 
-  /* -------------------------- LOAD FORECASTS --------------------------- */
+  const buildRowFromRecord = (meseNome: string, rec: any | null): MeseDati => {
+    if (!rec) {
+      return {
+        mese: meseNome,
+        prezzoEnergiaPerc: 0,
+        consumiPerc: 0,
+        oneriPerc: 0,
+        prezzoEnergiaBase: 0,
+        consumiBase: 0,
+        oneriBase: 0,
+        spesaTotale: 0,
+        editable: false,
+      };
+    }
+
+    const prezzoEnergiaBase = Number(rec?.prezzoEnergiaBase ?? 0);
+    const consumiBase       = Number(rec?.consumiBase ?? 0);
+    const oneriBase         = Number(rec?.oneriBase ?? 0);
+    const prezzoPerc        = Number(rec?.prezzoEnergiaPerc ?? 0);
+    const consumiPerc       = Number(rec?.consumiPerc ?? 0);
+    const oneriPerc         = Number(rec?.oneriPerc ?? 0);
+
+    const prezzoEnergia = consumiBase > 0 ? (prezzoEnergiaBase / consumiBase) * (1 + prezzoPerc / 100) : 0;
+    const consumi       = consumiBase * (1 + consumiPerc / 100);
+    const oneri         = oneriBase * (1 + oneriPerc / 100);
+    const spesaTotale   = prezzoEnergia * consumi + oneri;
+
+    const hasAnyData = (consumiBase > 0 || oneriBase > 0 || prezzoEnergiaBase > 0);
+
+    return {
+      mese: meseNome,
+      prezzoEnergiaPerc: prezzoPerc,
+      consumiPerc: consumiPerc,
+      oneriPerc: oneriPerc,
+      prezzoEnergiaBase,
+      consumiBase,
+      oneriBase,
+      spesaTotale,
+      editable: hasAnyData,
+    };
+  };
+
+  /* ----------------------- Mesi consentiti per fallback ---------------------- */
+  // year < currentYear: tutti i mesi (anno passato)
+  // year = currentYear: solo mesi conclusi
+  // year = currentYear+1: solo mesi conclusi (nessun futuro)
+  // year > currentYear+1: no fallback
+  const allowedFallbackMonths = (year: number) => {
+    const now = new Date();
+    const currentYear  = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1..12
+
+    if (year < currentYear) {
+      return new Set(Array.from({ length: 12 }, (_, i) => i + 1));
+    }
+    if (year === currentYear) {
+      return new Set(Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1));
+    }
+    if (year === currentYear + 1) {
+      return new Set(Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1));
+    }
+    return new Set<number>();
+  };
+
+  // Utility: calcola basi "rollate" per l'anno successivo applicando le % dell'anno N
+  const rollForwardBases = (rec: any) => {
+    const baseCons = Number(rec?.consumiBase ?? 0);
+    const baseSpesa = Number(rec?.prezzoEnergiaBase ?? 0);
+    const baseOneri = Number(rec?.oneriBase ?? 0);
+    const pCons = Number(rec?.consumiPerc ?? 0) / 100;
+    const pPrez = Number(rec?.prezzoEnergiaPerc ?? 0) / 100;
+    const pOneri = Number(rec?.oneriPerc ?? 0) / 100;
+
+    const nextConsumi = baseCons * (1 + pCons);
+    const unitPricePrev = baseCons > 0 ? (baseSpesa / baseCons) * (1 + pPrez) : 0; // €/kWh "modificato"
+    const nextSpesa = unitPricePrev * nextConsumi; // € spesa energia "base" per anno N+1
+    const nextOneri = baseOneri * (1 + pOneri);
+
+    return {
+      nextConsumi,
+      nextSpesa,
+      nextOneri,
+    };
+  };
+
   const loadForecasts = useCallback(async () => {
     try {
+      if (!pod) {
+        setHasData(false);
+        setRows(emptyRows());
+        return;
+      }
+
+      const year = anno;
+      const prevYear = year - 1;
+      const monthsAllowed = allowedFallbackMonths(year);
+
+      const currentYear = new Date().getFullYear();
+      // Non mostrare anni > currentYear+1
+      if (year > currentYear + 1) {
+        setHasData(false);
+        setRows(emptyRows());
+        return;
+      }
+
       /* ---------------------------- POD = ALL --------------------------- */
-      if (pod?.id === "ALL") {
-        const podSingoli = podOptions.filter(p => p.id !== "ALL");
-
-        /* Carica bilanci per ogni POD */
-        let allDataPerPod = await Promise.all(
-          podSingoli.map(async podItem => {
-            const res = await fetch(`${PATH}/budget/${podItem.id}/${anno}`, { credentials: "include" });
-            if (!res.ok) return null;
-            return await res.json();
-          })
-        );
-
-        /* Fallback: anno precedente */
-        const allDataEmpty = allDataPerPod.every(d => !d || d.length === 0);
-        if (allDataEmpty && anno > YEARS[0]) {
-          allDataPerPod = await Promise.all(
-            podSingoli.map(async podItem => {
-              const res = await fetch(`${PATH}/budget/${podItem.id}/${anno - 1}`, { credentials: "include" });
-              if (!res.ok) return [];
-              return await res.json();
-            })
-          );
-        }
-
-        /* Nessun dato nemmeno nel fallback */
-        const isEmptyAfterFallback = allDataPerPod.every(d => !d || d.length === 0);
-        if (isEmptyAfterFallback) {
+      if (pod.id === "ALL") {
+        const podsSingoli = podOptions.filter(p => p.id !== "ALL");
+        if (podsSingoli.length === 0) {
           setHasData(false);
-          setRows(MONTHS.map(m => ({
-            mese: m,
-            prezzoEnergiaPerc: 0,
-            consumiPerc: 0,
-            oneriPerc: 0,
-            prezzoEnergiaBase: 0.1,
-            consumiBase: 0,
-            oneriBase: 0,
-            spesaTotale: 0,
-            editable: false,
-          })));
+          setRows(emptyRows());
           return;
         }
 
-        /* Aggregazione con somma di consumi e oneri e prezzo energia singolo */
-        const aggregatedData: MeseDati[] = MONTHS.map((meseNome, idx) => {
-          const meseIndex = idx + 1;
+        const wavg = (values: number[], weights: number[]) => {
+          const sumW = weights.reduce((a, b) => a + b, 0);
+          if (sumW <= 0) return 0;
+          return values.reduce((acc, v, i) => acc + v * (weights[i] || 0), 0) / sumW;
+        };
 
-          let consumiSum = 0;
-          let oneriSum = 0;
-          let prezzoEnergiaBaseSingolo: number | null = null;
-          let prezzoEnergiaPercSingolo: number | null = null;
+        // Dati anno selezionato
+        let perPodAnno = await Promise.all(
+          podsSingoli.map(async p => {
+            const r = await fetch(`${PATH}/budget/${p.id}/${year}`, { credentials: "include" });
+            return r.ok ? await r.json() : [];
+          })
+        );
+        perPodAnno = perPodAnno.map((arr, i) => applyLocalOverlayToArray(arr, podsSingoli[i].id, year));
 
-          allDataPerPod.forEach(podData => {
-            if (!podData) return;
-            const rec = podData.find((d: any) => d.mese === meseIndex);
+        // Dati anno precedente (per fallback)
+        let perPodPrev: any[] = [];
+        if (monthsAllowed.size > 0) {
+          perPodPrev = await Promise.all(
+            podsSingoli.map(async p => {
+              const r = await fetch(`${PATH}/budget/${p.id}/${prevYear}`, { credentials: "include" });
+              return r.ok ? await r.json() : [];
+            })
+          );
+        }
+        perPodPrev = perPodPrev.map((arr, i) => applyLocalOverlayToArray(arr, podsSingoli[i].id, prevYear));
+
+        const rowsAggregated: MeseDati[] = MONTHS.map((meseNome, idx) => {
+          const mese = idx + 1;
+          let usedAnyAnno = false;
+          let usedAnyPrev = false;
+          const recs: any[] = [];
+          for (let i = 0; i < podsSingoli.length; i++) {
+            const arrA = perPodAnno[i] || [];
+            const arrP = perPodPrev[i] || [];
+
+            let rec = arrA.find((d: any) =>
+              d.mese === mese && Number(d.anno) === year
+            ) || null;
+
             if (rec) {
-              if (prezzoEnergiaBaseSingolo === null && typeof rec.prezzoEnergiaBase === "number") {
-                prezzoEnergiaBaseSingolo = rec.prezzoEnergiaBase;
-                prezzoEnergiaPercSingolo = rec.prezzoEnergiaPerc;
+              usedAnyAnno = true;
+            } else if (monthsAllowed.has(mese)) {
+              const prevRec = arrP.find((d: any) =>
+                d.mese === mese && Number(d.anno) === prevYear
+              ) || null;
+              if (prevRec) {
+                rec = prevRec;
+                usedAnyPrev = true;
               }
-              if (typeof rec.consumiBase === "number") consumiSum += rec.consumiBase;
-              if (typeof rec.oneriBase === "number") oneriSum += rec.oneriBase;
             }
-          });
 
-          const prezzoEnergiaBase = prezzoEnergiaBaseSingolo ?? 0.1;
-          const prezzoEnergiaPerc = prezzoEnergiaPercSingolo ?? 0;
+            if (rec) recs.push(rec);
+          }
 
-          const prezzoEnergia = consumiSum > 0
-            ? (prezzoEnergiaBase / consumiSum) * (1 + prezzoEnergiaPerc / 100)
-            : 0;
+          const lcPrevAll = getLocalCache("ALL", prevYear, mese);
 
-          const spesaTotale = prezzoEnergia * consumiSum + oneriSum;
+          // Nessun dato per i POD: prova fallback da "ALL" (prevYear) -> basi rollate, % = 0
+          if (recs.length === 0) {
+            if (monthsAllowed.has(mese) && lcPrevAll) {
+              const { nextConsumi, nextSpesa, nextOneri } = rollForwardBases(lcPrevAll);
+              return {
+                mese: meseNome,
+                prezzoEnergiaPerc: 0,
+                consumiPerc: 0,
+                oneriPerc: 0,
+                prezzoEnergiaBase: nextSpesa,
+                consumiBase: nextConsumi,
+                oneriBase: nextOneri,
+                spesaTotale: 0,
+                editable: true,
+              };
+            }
+            return buildRowFromRecord(meseNome, null);
+          }
+
+          // Calcoli aggregati
+          const consumiBases = recs.map(r => Number(r.consumiBase ?? 0));
+          const oneriBases   = recs.map(r => Number(r.oneriBase ?? 0));
+          const spesaBases   = recs.map(r => Number(r.prezzoEnergiaBase ?? 0));
+
+          let consumiSum = consumiBases.reduce((a, b) => a + b, 0);
+          let oneriSum   = oneriBases.reduce((a, b) => a + b, 0);
+          let spesaSum   = spesaBases.reduce((a, b) => a + b, 0);
+
+          let prezzoEnergiaPercAgg = wavg(recs.map(r => Number(r.prezzoEnergiaPerc ?? 0)), consumiBases);
+          let consumiPercAgg       = wavg(recs.map(r => Number(r.consumiPerc ?? 0)),       consumiBases);
+          let oneriPercAgg         = wavg(recs.map(r => Number(r.oneriPerc ?? 0)),         oneriBases);
+
+          const lcCurrent = getLocalCache("ALL", year, mese);
+          const lcPrev    = getLocalCache("ALL", prevYear, mese);
+
+          if (lcCurrent && usedAnyAnno) {
+            // Overlay "ALL" anno corrente
+            prezzoEnergiaPercAgg = lcCurrent.prezzoEnergiaPerc ?? prezzoEnergiaPercAgg;
+            consumiPercAgg       = lcCurrent.consumiPerc       ?? consumiPercAgg;
+            oneriPercAgg         = lcCurrent.oneriPerc         ?? oneriPercAgg;
+            spesaSum             = lcCurrent.prezzoEnergiaBase ?? spesaSum;
+            consumiSum           = lcCurrent.consumiBase       ?? consumiSum;
+            oneriSum             = lcCurrent.oneriBase         ?? oneriSum;
+            } else if (!usedAnyAnno && usedAnyPrev && monthsAllowed.has(mese)) {
+              // Fallback: basi "rollate" dei POD, percentuali azzerate
+              let accSpesa = 0;
+              let accCons  = 0;
+              let accOneri = 0;
+
+              for (const r of recs) {
+                const { nextConsumi, nextSpesa: spesaN, nextOneri: oneriN } = rollForwardBases(r);
+                accSpesa += spesaN;
+                accCons  += nextConsumi;
+                accOneri += oneriN;
+              }
+
+              prezzoEnergiaPercAgg = 0;
+              consumiPercAgg       = 0;
+              oneriPercAgg         = 0;
+              spesaSum             = accSpesa;
+              consumiSum           = accCons;
+              oneriSum             = accOneri;
+            }
+
+          const prezzoEnergia = consumiSum > 0 ? (spesaSum / consumiSum) * (1 + prezzoEnergiaPercAgg / 100) : 0;
+          const spesaTotale   = prezzoEnergia * (consumiSum * (1 + consumiPercAgg / 100)) + (oneriSum * (1 + oneriPercAgg / 100));
 
           return {
             mese: meseNome,
-            prezzoEnergiaPerc: prezzoEnergiaPerc,
-            consumiPerc: 0,
-            oneriPerc: 0,
-            prezzoEnergiaBase: prezzoEnergiaBase,
+            prezzoEnergiaPerc: prezzoEnergiaPercAgg,
+            consumiPerc: consumiPercAgg,
+            oneriPerc: oneriPercAgg,
+            prezzoEnergiaBase: spesaSum,
             consumiBase: consumiSum,
             oneriBase: oneriSum,
             spesaTotale,
@@ -329,89 +567,67 @@ const BudgetPage: React.FC = () => {
           };
         });
 
-        setRows(aggregatedData);
-        setHasData(true);
+        const anyData = rowsAggregated.some(r => r.editable);
+        setHasData(anyData);
+        setRows(anyData ? rowsAggregated : emptyRows());
+        return;
+      }
 
-      /* -------------------------- POD singolo --------------------------- */
-      } else if (pod) {
-        let res  = await fetch(`${PATH}/budget/${pod.id}/${anno}`, { credentials: "include" });
-        let data = res.ok ? await res.json() : [];
+      /* ---------------------------- POD SINGOLO ---------------------------- */
+      let resAnno = await fetch(`${PATH}/budget/${pod.id}/${year}`, { credentials: "include" });
+      let dataAnno: any[] = resAnno.ok ? await resAnno.json() : [];
+      dataAnno = applyLocalOverlayToArray(dataAnno, pod.id, year);
 
-        /* Fallback anno precedente se vuoto */
-        if ((!data || data.length === 0) && anno > YEARS[0]) {
-          res = await fetch(`${PATH}/budget/${pod.id}/${anno - 1}`, { credentials: "include" });
-          if (res.ok) data = await res.json();
-        }
+      let dataPrev: any[] = [];
+      if (monthsAllowed.size > 0) {
+        const r = await fetch(`${PATH}/budget/${pod.id}/${prevYear}`, { credentials: "include" });
+        if (r.ok) dataPrev = await r.json();
+      }
+      dataPrev = applyLocalOverlayToArray(dataPrev, pod.id, prevYear);
 
-        /* Nessun dato */
-        if (!data || data.length === 0) {
-          setHasData(false);
-          setRows(MONTHS.map(m => ({
-            mese: m,
+      const mergedRows: MeseDati[] = MONTHS.map((meseNome, idx) => {
+        const mese = idx + 1;
+        const recAnno = dataAnno.find((d: any) =>
+          d.mese === mese && Number(d.anno) === year
+        ) || null;
+
+        const recPrev = dataPrev.find((d: any) =>
+          d.mese === mese && Number(d.anno) === prevYear
+        ) || null;
+
+        if (recAnno) {
+          // Anno corrente: uso basi + percentuali salvate
+          return buildRowFromRecord(meseNome, recAnno);
+        } else if (recPrev && monthsAllowed.has(mese)) {
+          // Fallback da prevYear: basi "rollate" (applico % dell'anno N), % = 0
+          const { nextConsumi, nextSpesa, nextOneri } = rollForwardBases(recPrev);
+          return {
+            mese: meseNome,
             prezzoEnergiaPerc: 0,
             consumiPerc: 0,
             oneriPerc: 0,
-            prezzoEnergiaBase: 0.1,
-            consumiBase: 0,
-            oneriBase: 0,
+            prezzoEnergiaBase: nextSpesa,
+            consumiBase: nextConsumi,
+            oneriBase: nextOneri,
             spesaTotale: 0,
-            editable: false,
-          })));
-          return;
-        }
-
-        /* Popola righe */
-        setHasData(true);
-        setRows(MONTHS.map((m, idx) => {
-          const rec = data.find((d: any) => d.mese === idx + 1);
-
-          // Calcolo prezzo energia come prezzo_energia_base / consumi_base * (1 + variazione)
-          const prezzoEnergiaBase = rec?.prezzoEnergiaBase ?? 0.1;
-          const consumiBase = rec?.consumiBase ?? 0;
-
-          const prezzoEnergia = consumiBase > 0
-            ? (prezzoEnergiaBase / consumiBase) * (1 + (rec?.prezzoEnergiaPerc ?? 0) / 100)
-            : 0;
-
-          const consumi = (rec?.consumiBase ?? 0) * (1 + (rec?.consumiPerc ?? 0) / 100);
-          const oneri = (rec?.oneriBase ?? 0) * (1 + (rec?.oneriPerc ?? 0) / 100);
-          const spesaTotale = prezzoEnergia * consumi + oneri;
-
-          return {
-            mese: m,
-            prezzoEnergiaPerc: rec?.prezzoEnergiaPerc ?? 0,
-            consumiPerc:       rec?.consumiPerc       ?? 0,
-            oneriPerc:         rec?.oneriPerc         ?? 0,
-            prezzoEnergiaBase: prezzoEnergiaBase,
-            consumiBase,
-            oneriBase:         rec?.oneriBase         ?? 0,
-            spesaTotale,
             editable: true,
           };
-        }));
+        } else {
+          // Nessun dato
+          return buildRowFromRecord(meseNome, null);
+        }
+      });
 
-      /* ----------------------- Nessun POD selezionato -------------------- */
-      } else {
-        setHasData(false);
-        setRows(MONTHS.map(m => ({
-          mese: m,
-          prezzoEnergiaPerc: 0,
-          consumiPerc: 0,
-          oneriPerc: 0,
-          prezzoEnergiaBase: 0.1,
-          consumiBase: 0,
-          oneriBase: 0,
-          spesaTotale: 0,
-          editable: false,
-        })));
-      }
+      const anyRowHasData = mergedRows.some(r => r.editable);
+      setHasData(anyRowHasData);
+      setRows(anyRowHasData ? mergedRows : emptyRows());
     } catch {
       setHasData(false);
-      setRows(rs => rs.map(r => ({ ...r, editable: false })));
+      setRows(emptyRows());
     }
-  }, [pod, anno, podOptions]);
+  }, [pod, anno, podOptions, applyLocalOverlayToArray, getLocalCache]);
 
-  /* ------------------------- INIT pod options -------------------------- */
+  /* ------------------------- INIT POD options ------------------------- */
   useEffect(() => {
     fetch(`${PATH}/pod`, { credentials: "include" })
       .then(r => {
@@ -432,13 +648,48 @@ const BudgetPage: React.FC = () => {
   }, [loadForecasts]);
 
   /* --------------------------- Update row ----------------------------- */
-  const updateRow = useCallback(<K extends keyof MeseDati>(i: number, field: K, value: MeseDati[K]) => {
+  type UpdateRow = <K extends keyof MeseDati>(i: number, field: K, value: MeseDati[K]) => void;
+  const updateRow: UpdateRow = useCallback((i, field, value) => {
     setRows(rs => {
       const nr = [...rs];
       nr[i] = { ...nr[i], [field]: value };
       return nr;
     });
   }, []);
+
+  /* ------------------------ Persistenza locale ------------------------ */
+  const handleLocalPersist = useCallback((monthIndex1Based: number, payload: LocalCacheMonth) => {
+    if (!pod) return;
+
+    // 1) salva sull’anno corrente (LWW)
+    putLocalCache(pod.id, anno, monthIndex1Based, payload);
+
+    // 2) calcola e salva anche le basi "rollate" per l’anno successivo, %=0
+    const r = rows[monthIndex1Based - 1];
+    if (r) {
+      const baseCons = Number(r.consumiBase ?? 0);
+      const baseSpesa = Number(r.prezzoEnergiaBase ?? 0);
+      const baseOneri = Number(r.oneriBase ?? 0);
+      const pCons = Number(r.consumiPerc ?? 0) / 100;
+      const pPrez = Number(r.prezzoEnergiaPerc ?? 0) / 100;
+      const pOneri = Number(r.oneriPerc ?? 0) / 100;
+
+      const nextConsumi = baseCons * (1 + pCons);
+      const unitPricePrev = baseCons > 0 ? (baseSpesa / baseCons) * (1 + pPrez) : 0;
+      const nextSpesa = unitPricePrev * nextConsumi;
+      const nextOneri = baseOneri * (1 + pOneri);
+
+      putLocalCache(pod.id, anno + 1, monthIndex1Based, {
+        prezzoEnergiaBase: nextSpesa,
+        consumiBase: nextConsumi,
+        oneriBase: nextOneri,
+        prezzoEnergiaPerc: 0,
+        consumiPerc: 0,
+        oneriPerc: 0,
+        ts: (payload.ts ?? Date.now()) + 1, // LWW
+      });
+    }
+  }, [pod, anno, rows, putLocalCache]);
 
   /* ------------------------- EXPORT EXCEL ----------------------------- */
   const handleExportExcel = async () => {
@@ -459,7 +710,8 @@ const BudgetPage: React.FC = () => {
     }
   };
 
-  /* -------------------------------- RENDER ----------------------------- */
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
@@ -471,7 +723,6 @@ const BudgetPage: React.FC = () => {
 
       <SecondaryNavbar items={NAV_TABS} activeItemId={activeTab} onItemClick={setActiveTab} />
 
-      {/* ----------------------------- TAB PBI ----------------------------- */}
       {activeTab === "pbi" ? (
         <Card className="mt-6">
           <CardHeader />
@@ -480,11 +731,10 @@ const BudgetPage: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        /* --------------------------- TAB BUDGET -------------------------- */
         <>
           <div className="bg-white rounded-md shadow p-6 mb-6 border border-gray-200">
             <div className="flex items-center gap-6">
-              {/* ----------------------- Seleziona POD ---------------------- */}
+              {/* Seleziona POD */}
               <div className="flex-1 max-w-[420px] mb-7">
                 <Label className="block text-sm font-medium mb-1">Seleziona POD</Label>
                 <Select
@@ -505,7 +755,7 @@ const BudgetPage: React.FC = () => {
                 </Select>
               </div>
 
-              {/* -------------------------- Anno --------------------------- */}
+              {/* Anno */}
               <div className="flex flex-col flex-1 max-w-[420px] mb-2">
                 <Label className="block text-sm font-medium mb-1">Anno</Label>
                 <Select value={String(anno)} onValueChange={v => setAnno(Number(v))}>
@@ -513,7 +763,7 @@ const BudgetPage: React.FC = () => {
                     <SelectValue>{anno}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {YEARS.map(y => (
+                    {YEARS.filter(y => y <= currentYear + 1).map(y => (
                       <SelectItem key={y} value={String(y)}>
                         {y}
                       </SelectItem>
@@ -528,7 +778,7 @@ const BudgetPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* ------------------- Bottone Export ------------------------- */}
+              {/* Export */}
               <div className="flex-1 flex justify-end max-w-m">
                 <Button
                   size="sm"
@@ -543,24 +793,25 @@ const BudgetPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ------------------------ Griglia card ------------------------ */}
+          {/* Griglia mesi */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {rows.map((r, i) => (
               <BudgetCard
-                key={`${r.mese}-${pod?.id}`}
+                key={`${r.mese}-${pod?.id}-${anno}`}
                 data={r}
                 idx={i}
                 updateRow={updateRow}
                 podCode={pod?.id ?? ""}
                 anno={anno}
                 onSaveSuccess={loadForecasts}
+                onLocalPersist={(m, payload) => handleLocalPersist(m, payload)}
               />
             ))}
           </div>
         </>
       )}
 
-      {/* ---------------------------- Note ------------------------------ */}
+      {/* Note */}
       <div className="mt-8">
         <NotesSection title="Note sul Controllo">
           <p className="text-sm text-gray-600">

@@ -100,7 +100,6 @@ export const AppSidebar = () => {
         { title: 'Dashboard', path: '/energy-portfolio/dashboard', icon: BarChart3, visible: accessoEffettuato },
         { title: 'Upload Bollette', path: '/energy-portfolio/upload', icon: FileText, visible: accessoEffettuato },
         { title: 'Futures', path: '/energy-portfolio/futures', icon: Briefcase, visible: accessoEffettuato },
-        { title: 'Costi', path: '/energy-portfolio/costs', icon: DollarSign, visible: accessoEffettuato },
         { title: 'Budget', path: '/budget', icon: BarChart3, visible: accessoEffettuato },
 
         // Admin e gestione utenti
