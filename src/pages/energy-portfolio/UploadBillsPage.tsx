@@ -148,9 +148,13 @@ const CostiForm = () => {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
 
+    // Lista anni disponibili (dal 2023 al 2034)
+    const anniDisponibili = [2023, 2024, ...Array.from({length: 10}, (_, i) => 2025 + i)];
+
     // Nuovi stati per la gestione avanzata
     const [tipoPrezzi, setTipoPrezzi] = useState<'fisso' | 'indicizzato' | 'misto' | 'dinamico'>('fisso');
     const [tipoTariffa, setTipoTariffa] = useState<'monoraria' | 'bioraria' | 'trioraria'>('monoraria');
+    const [annoSelezionato, setAnnoSelezionato] = useState<number>(2025); // NUOVO STATO PER ANNO
     const [costiDinamici, setCostiDinamici] = useState<CostiDinamici>({
         periodi: [{ id: '1', meseInizio: 1, costiData: { f0: 0, f1: 0, f2: 0, f3: 0, f1_perdite: 0, f2_perdite: 0, f3_perdite: 0 } }]
     });
@@ -322,8 +326,8 @@ const CostiForm = () => {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-4">
-                    {/* Menu principale tipo prezzi e tipo tariffa allineati */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Menu principale tipo prezzi, anno e tipo tariffa allineati */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label>Tipo di Prezzo</Label>
                             <Select value={tipoPrezzi} onValueChange={(value) => setTipoPrezzi(value as any)}>
@@ -335,6 +339,22 @@ const CostiForm = () => {
                                     <SelectItem value="indicizzato">100% Indicizzato</SelectItem>
                                     <SelectItem value="misto">Prezzo Misto</SelectItem>
                                     <SelectItem value="dinamico">Prezzo Dinamico</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Anno</Label>
+                            <Select value={annoSelezionato.toString()} onValueChange={(value) => setAnnoSelezionato(parseInt(value))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleziona anno" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {anniDisponibili.map(anno => (
+                                        <SelectItem key={anno} value={anno.toString()}>
+                                            {anno}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -374,8 +394,8 @@ const CostiForm = () => {
                                 />
                                 <span>%</span>
                                 <span className="text-sm text-gray-600">
-              variabile (resto fisso: {100 - (formDinamici.watch("percentualeVariabile") || 0)}%)
-            </span>
+          variabile (resto fisso: {100 - (formDinamici.watch("percentualeVariabile") || 0)}%)
+        </span>
                             </div>
                         </div>
                     )}
@@ -388,7 +408,6 @@ const CostiForm = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {renderCampiCosti(form.getValues())}
                             </div>
-
                             <Button type="submit" disabled={loading} className="w-full">
                                 {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvataggio in corso...</>) : ("Salva Costi")}
                             </Button>
@@ -409,7 +428,7 @@ const CostiForm = () => {
                             <Card key={periodo.id}>
                                 <CardHeader>
                                     <div className="flex justify-between items-center">
-                                        <CardTitle className="text-base">Periodo {index + 1}</CardTitle>
+                                        <CardTitle className="text-base">Periodo {index + 1} - Anno {annoSelezionato}</CardTitle>
                                         {costiDinamici.periodi.length > 1 && (
                                             <Button
                                                 onClick={() => rimuoviPeriodo(periodo.id)}
@@ -444,7 +463,6 @@ const CostiForm = () => {
                                             </Select>
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {renderCampiCosti(
                                             periodo.costiData,
@@ -478,6 +496,8 @@ const CostiForm = () => {
             </CardContent>
         </Card>
     );
+
+
 
 };
 
