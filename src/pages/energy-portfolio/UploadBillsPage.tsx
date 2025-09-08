@@ -791,17 +791,6 @@ const UploadBillsPage = () => {
                             onFileUploadSuccess={handleFileUploadSuccess}
                             filesUploaded={data.length}
                         />
-
-                        {/* Descrizione sezione */}
-                        <Card>
-                            <CardContent className="pt-6">
-                                <p className="text-sm text-gray-600">
-                                    Questa sezione mostra l'elenco delle bollette caricate con possibilità di ricerca e filtro.
-                                    I dati vengono caricati automaticamente all'apertura della pagina.
-                                </p>
-                            </CardContent>
-                        </Card>
-
                         {/* SEARCH AND FILTER */}
                         <Card>
                             <CardContent className="pt-6">
@@ -917,16 +906,6 @@ const UploadBillsPage = () => {
             case 'pods':
                 return (
                     <div className="space-y-6">
-                        {/* Descrizione sezione */}
-                        <Card>
-                            <CardContent className="pt-6">
-                                <p className="text-sm text-gray-600">
-                                    Questa sezione mostra i dati dei POD (Punti di Prelievo) associati alle bollette caricate.
-                                    I dati vengono caricati automaticamente all'apertura della pagina.
-                                </p>
-                            </CardContent>
-                        </Card>
-
                         {/* SEARCH */}
                         <Card>
                             <CardContent className="pt-6">
@@ -1025,14 +1004,6 @@ const UploadBillsPage = () => {
             case 'costs':
                 return (
                     <div className="space-y-6">
-                        <Card>
-                            <CardContent className="pt-6">
-                                <p className="text-sm text-gray-600 mb-6">
-                                    Questa sezione permette di gestire i costi energetici con diverse modalità di prezzo.
-                                    Seleziona il tipo di prezzo più adatto alle tue esigenze e configura i parametri specifici.
-                                </p>
-                            </CardContent>
-                        </Card>
                         <CostiForm />
                     </div>
                 );
@@ -1061,11 +1032,6 @@ const UploadBillsPage = () => {
                 {/* Content */}
                 <div className="mt-6">
                     {renderContent()}
-                </div>
-
-                {/* NotesSection identico a FuturesPage */}
-                <div className="mt-8">
-                    <NotesSection title={""} children={""} />
                 </div>
             </div>
         </div>
