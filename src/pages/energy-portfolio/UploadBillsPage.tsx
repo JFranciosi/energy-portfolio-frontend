@@ -21,8 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Switch } from "@/components/ui/switch";
-import { Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Database, FileText, Plus, Trash2 } from 'lucide-react';
+import { Download, Search, ChevronDown, ChevronUp, Upload, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import {
     Form,
@@ -125,6 +124,10 @@ interface CostiDinamici {
     periodi: PeriodoCosti[];
 }
 
+// Definizione tipi per evitare ESLint no-explicit-any
+type TipoPrezzi = 'fisso' | 'indicizzato' | 'misto' | 'dinamico';
+type TipoTariffa = 'monoraria' | 'bioraria' | 'trioraria';
+
 const costiSchema = z.object({
     f0: z.coerce.number().min(0, "Il valore deve essere positivo"),
     f1: z.coerce.number().min(0, "Il valore deve essere positivo"),
@@ -152,9 +155,9 @@ const CostiForm = () => {
     const anniDisponibili = [2023, 2024, ...Array.from({length: 10}, (_, i) => 2025 + i)];
 
     // Nuovi stati per la gestione avanzata
-    const [tipoPrezzi, setTipoPrezzi] = useState<'fisso' | 'indicizzato' | 'misto' | 'dinamico'>('fisso');
-    const [tipoTariffa, setTipoTariffa] = useState<'monoraria' | 'bioraria' | 'trioraria'>('monoraria');
-    const [annoSelezionato, setAnnoSelezionato] = useState<number>(2025); // NUOVO STATO PER ANNO
+    const [tipoPrezzi, setTipoPrezzi] = useState<TipoPrezzi>('fisso');
+    const [tipoTariffa, setTipoTariffa] = useState<TipoTariffa>('monoraria');
+    const [annoSelezionato, setAnnoSelezionato] = useState<number>(2025);
     const [costiDinamici, setCostiDinamici] = useState<CostiDinamici>({
         periodi: [{ id: '1', meseInizio: 1, costiData: { f0: 0, f1: 0, f2: 0, f3: 0, f1_perdite: 0, f2_perdite: 0, f3_perdite: 0 } }]
     });
@@ -183,9 +186,9 @@ const CostiForm = () => {
             if (response.ok) {
                 const data = await response.json();
                 const costiState = {f0: 0,f1: 0,f2: 0,f3: 0,f1_perdite: 0,f2_perdite: 0,f3_perdite: 0};
-                data.forEach((item: any) => {
+                data.forEach((item: {nomeCosto: string; costoEuro: number}) => {
                     const key = item.nomeCosto as keyof CostiState;
-                    if (key in costiState) (costiState as any)[key] = item.costoEuro;
+                    if (key in costiState) (costiState as CostiState)[key] = item.costoEuro;
                 });
                 Object.entries(costiState).forEach(([key, value]) => {
                     form.setValue(key as keyof CostiState, value as number);
@@ -217,8 +220,9 @@ const CostiForm = () => {
                 const errorText = await response.text();
                 throw new Error(errorText || 'Errore durante il salvataggio dei costi');
             }
-        } catch (error: any) {
-            toast({title: "Errore", description: error?.message ?? 'Errore durante il salvataggio dei costi', variant: "destructive"});
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Errore durante il salvataggio dei costi';
+            toast({title: "Errore", description: errorMessage, variant: "destructive"});
         } finally {
             setLoading(false);
         }
@@ -286,7 +290,7 @@ const CostiForm = () => {
 
         return campi.map(campo => {
             let nomeCompleto = campo;
-            const valore = (costiData as any)[campo] || 0;
+            const valore = (costiData as CostiState)[campo as keyof CostiState] || 0;
 
             if (tipoPrezzi === 'indicizzato' && campo.includes('spread')) {
                 nomeCompleto = campo.replace('_spread', ' Spread');
@@ -330,7 +334,7 @@ const CostiForm = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label>Tipo di Prezzo</Label>
-                            <Select value={tipoPrezzi} onValueChange={(value) => setTipoPrezzi(value as any)}>
+                            <Select value={tipoPrezzi} onValueChange={(value) => setTipoPrezzi(value as TipoPrezzi)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Seleziona tipo prezzo" />
                                 </SelectTrigger>
@@ -363,7 +367,7 @@ const CostiForm = () => {
                         {tipoPrezzi === 'fisso' && (
                             <div className="space-y-2">
                                 <Label>Tipo Tariffa</Label>
-                                <Select value={tipoTariffa} onValueChange={(value) => setTipoTariffa(value as any)}>
+                                <Select value={tipoTariffa} onValueChange={(value) => setTipoTariffa(value as TipoTariffa)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Seleziona tipo tariffa" />
                                     </SelectTrigger>
@@ -394,8 +398,8 @@ const CostiForm = () => {
                                 />
                                 <span>%</span>
                                 <span className="text-sm text-gray-600">
-          variabile (resto fisso: {100 - (formDinamici.watch("percentualeVariabile") || 0)}%)
-        </span>
+                                variabile (resto fisso: {100 - (formDinamici.watch("percentualeVariabile") || 0)}%)
+                            </span>
                             </div>
                         </div>
                     )}
@@ -496,9 +500,6 @@ const CostiForm = () => {
             </CardContent>
         </Card>
     );
-
-
-
 };
 
 // CARICAMENTO MULTIPLO FILE
@@ -686,7 +687,7 @@ const UploadBillsPage = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                setPod(data.map((pod: any) => ({
+                setPod(data.map((pod: Pod) => ({
                     ...pod,
                     potenzaImpegnata: pod.potenzaImpegnata,
                     tensione: pod.tipoTensione,
@@ -700,7 +701,9 @@ const UploadBillsPage = () => {
                     text: 'Errore durante il recupero dei POD'
                 });
             }
-        } catch { /* empty */ }
+        } catch {
+            // Silently ignore errors
+        }
     };
 
     const downloadFile = async (id: string, name: string) => {
@@ -772,8 +775,8 @@ const UploadBillsPage = () => {
             }
 
             // Per le altre colonne usiamo confronto case-insensitive su stringhe
-            const aValue = String((a as any)[sortColumn] ?? '').toLowerCase();
-            const bValue = String((b as any)[sortColumn] ?? '').toLowerCase();
+            const aValue = String((a as BillFile)[sortColumn as keyof BillFile] ?? '').toLowerCase();
+            const bValue = String((b as BillFile)[sortColumn as keyof BillFile] ?? '').toLowerCase();
             if (sortDirection === 'asc') return aValue > bValue ? 1 : -1;
             return aValue < bValue ? 1 : -1;
         });
@@ -788,6 +791,16 @@ const UploadBillsPage = () => {
                             onFileUploadSuccess={handleFileUploadSuccess}
                             filesUploaded={data.length}
                         />
+
+                        {/* Descrizione sezione */}
+                        <Card>
+                            <CardContent className="pt-6">
+                                <p className="text-sm text-gray-600">
+                                    Questa sezione mostra l'elenco delle bollette caricate con possibilità di ricerca e filtro.
+                                    I dati vengono caricati automaticamente all'apertura della pagina.
+                                </p>
+                            </CardContent>
+                        </Card>
 
                         {/* SEARCH AND FILTER */}
                         <Card>
@@ -904,6 +917,16 @@ const UploadBillsPage = () => {
             case 'pods':
                 return (
                     <div className="space-y-6">
+                        {/* Descrizione sezione */}
+                        <Card>
+                            <CardContent className="pt-6">
+                                <p className="text-sm text-gray-600">
+                                    Questa sezione mostra i dati dei POD (Punti di Prelievo) associati alle bollette caricate.
+                                    I dati vengono caricati automaticamente all'apertura della pagina.
+                                </p>
+                            </CardContent>
+                        </Card>
+
                         {/* SEARCH */}
                         <Card>
                             <CardContent className="pt-6">
@@ -1002,6 +1025,14 @@ const UploadBillsPage = () => {
             case 'costs':
                 return (
                     <div className="space-y-6">
+                        <Card>
+                            <CardContent className="pt-6">
+                                <p className="text-sm text-gray-600 mb-6">
+                                    Questa sezione permette di gestire i costi energetici con diverse modalità di prezzo.
+                                    Seleziona il tipo di prezzo più adatto alle tue esigenze e configura i parametri specifici.
+                                </p>
+                            </CardContent>
+                        </Card>
                         <CostiForm />
                     </div>
                 );
@@ -1032,6 +1063,10 @@ const UploadBillsPage = () => {
                     {renderContent()}
                 </div>
 
+                {/* NotesSection identico a FuturesPage */}
+                <div className="mt-8">
+                    <NotesSection title={""} children={""} />
+                </div>
             </div>
         </div>
     );
