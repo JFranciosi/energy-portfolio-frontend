@@ -28,6 +28,9 @@ export const energyportfolio = {
     pastEnergyData: {
       reportId: "24a05787-ca23-4a91-9ae6-ac5d25b237d9",
     },
+    budget: {
+      reportId: "eaf84443-692d-4bd9-aba6-d911dcdfd83d",
+    },
   },
 };
 
@@ -44,76 +47,66 @@ type PowerBIEventHandler = (event?: pbi.service.ICustomEvent<any>) => void;
 const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
   const powerbiService = useRef<PowerBIService | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Define the path for API calls
-  const PATH = "http://localhost:8081"; // Same as used in DashboardPage
+  const PATH = "http://localhost:8081"; 
 
-  // Toggle fullscreen function
   const toggleFullscreen = () => {
     if (!reportRef.current) return;
 
     if (!isFullscreen) {
       if (reportRef.current.requestFullscreen) {
         reportRef.current.requestFullscreen()
-            .then(() => setIsFullscreen(true))
-            .catch((err) => console.error("Could not enter fullscreen mode:", err));
+          .then(() => setIsFullscreen(true))
+          .catch((err) => console.error("Could not enter fullscreen mode:", err));
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen()
-            .then(() => setIsFullscreen(false))
-            .catch((err) => console.error("Could not exit fullscreen mode:", err));
+          .then(() => setIsFullscreen(false))
+          .catch((err) => console.error("Could not exit fullscreen mode:", err));
       }
     }
   };
 
   // Listen for fullscreen change events
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   useEffect(() => {
-    let isMounted = true; // Add a flag to track component mount state
+    let isMounted = true;
     let reportInstance: PowerBIReport | null = null;
 
     const loadReport = async () => {
       if (!reportId) {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
         return;
       }
 
       try {
         console.log("Loading report with ID:", reportId);
 
-        // Reset any previous errors
         if (isMounted) {
           setError(null);
           setLoading(true);
         }
 
         // Get the token and embed URL from the API
-        const response = await fetch(`${PATH}/api/pbitoken/embed?reportId=${reportId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "include"
-        });
+        const response = await fetch(
+          `${PATH}/api/pbitoken/embed?reportId=${encodeURIComponent(reportId)}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        );
 
-        if (!isMounted) return; // Check if component is still mounted
+        if (!isMounted) return;
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -133,20 +126,20 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           powerbiService.current.reset(reportRef.current);
         }
 
-        if (!reportRef.current || !isMounted) return; // Check if ref and component are available
+        if (!reportRef.current || !isMounted) return;
 
         // Initialize Power BI service
         if (!powerbiService.current) {
           powerbiService.current = new pbi.service.Service(
-              pbi.factories.hpmFactory,
-              pbi.factories.wpmpFactory,
-              pbi.factories.routerFactory
+            pbi.factories.hpmFactory,
+            pbi.factories.wpmpFactory,
+            pbi.factories.routerFactory
           );
         }
 
         // Configure embedding with settings optimized to fill available space
         const embedConfig: pbi.IEmbedConfiguration = {
-          type: 'report',
+          type: "report",
           id: reportId,
           embedUrl: data.embedUrl,
           accessToken: data.token,
@@ -154,14 +147,12 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           settings: {
             panes: {
               filters: { visible: false },
-              pageNavigation: { visible: false }
+              pageNavigation: { visible: false },
             },
             background: pbi.models.BackgroundType.Transparent,
             layoutType: pbi.models.LayoutType.Custom,
-            customLayout: {
-              displayOption: pbi.models.DisplayOption.FitToWidth
-            }
-          }
+            customLayout: { displayOption: pbi.models.DisplayOption.FitToWidth },
+          },
         };
 
         console.log("Embedding with config");
@@ -172,17 +163,12 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
         // Handle events
         const loadedHandler: PowerBIEventHandler = () => {
           console.log("Report loaded successfully");
-          if (isMounted) {
-            setLoading(false);
-          }
+          if (isMounted) setLoading(false);
 
-          // Set display mode to automatically adapt
           if (reportInstance) {
             reportInstance.updateSettings({
               layoutType: pbi.models.LayoutType.Custom,
-              customLayout: {
-                displayOption: pbi.models.DisplayOption.FitToWidth
-              }
+              customLayout: { displayOption: pbi.models.DisplayOption.FitToWidth },
             }).catch((err: Error) => console.error("Error updating report settings:", err));
           }
         };
@@ -196,12 +182,12 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
           }
         };
 
-        reportInstance.on('loaded', loadedHandler);
-        reportInstance.on('error', errorHandler);
+        reportInstance.on("loaded", loadedHandler);
+        reportInstance.on("error", errorHandler);
 
       } catch (error) {
         console.error("Error loading report:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         if (isMounted) {
           setError(`Si è verificato un errore durante il caricamento del report: ${errorMessage}`);
           setLoading(false);
@@ -215,8 +201,8 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
     return () => {
       isMounted = false;
       if (reportInstance) {
-        reportInstance.off('loaded');
-        reportInstance.off('error');
+        reportInstance.off("loaded");
+        reportInstance.off("error");
       }
       if (powerbiService.current && reportRef.current) {
         try {
@@ -228,50 +214,47 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
     };
   }, [reportId, PATH]);
 
-  // If reportId is empty, don't render the report container
-  if (!reportId) {
-    return null;
-  }
+  if (!reportId) return null;
 
   return (
-      <div className={className}>
-        <div className="flex justify-end mb-2">
-          <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleFullscreen}
-              className="z-10"
-              title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
-          >
-            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-          </Button>
-        </div>
-
-        {loading && (
-            <div className="flex flex-col items-center justify-center h-full w-full p-8">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
-              <p>Caricamento report...</p>
-            </div>
-        )}
-        {error && (
-            <div className="flex flex-col items-center justify-center h-full w-full p-8">
-              <p className="text-destructive">{error}</p>
-            </div>
-        )}
-        <div
-            ref={reportRef}
-            className="w-full h-full min-h-[400px]"
-            style={{
-              display: loading ? 'none' : 'block',
-              position: isFullscreen ? 'fixed' : 'relative',
-              top: isFullscreen ? '0' : 'auto',
-              left: isFullscreen ? '0' : 'auto',
-              right: isFullscreen ? '0' : 'auto',
-              bottom: isFullscreen ? '0' : 'auto',
-              zIndex: isFullscreen ? 9999 : 'auto',
-            }}
-        ></div>
+    <div className={className}>
+      <div className="flex justify-end mb-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleFullscreen}
+          className="z-10"
+          title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
+        >
+          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
       </div>
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center h-full w-full p-8">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
+          <p>Caricamento report...</p>
+        </div>
+      )}
+      {error && (
+        <div className="flex flex-col items-center justify-center h-full w-full p-8">
+          <p className="text-destructive">{error}</p>
+        </div>
+      )}
+      <div
+        ref={reportRef}
+        className="w-full h-full min-h-[400px]"
+        style={{
+          display: loading ? "none" : "block",
+          position: isFullscreen ? "fixed" : "relative",
+          top: isFullscreen ? "0" : "auto",
+          left: isFullscreen ? "0" : "auto",
+          right: isFullscreen ? "0" : "auto",
+          bottom: isFullscreen ? "0" : "auto",
+          zIndex: isFullscreen ? 9999 : "auto",
+        }}
+      ></div>
+    </div>
   );
 };
 

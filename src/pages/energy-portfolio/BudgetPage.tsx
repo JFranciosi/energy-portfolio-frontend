@@ -6,7 +6,237 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Swal from "sweetalert2";
-import { Download } from "lucide-react";
+import { Download, Maximize, Minimize, BarChart3 } from "lucide-react";
+import * as pbi from "powerbi-client";
+
+/* =============================================================================
+ *                         CONFIG REPORT POWER BI (FE)
+ * ========================================================================== */
+
+const energyportfolio = {
+  baseURL: "https://app.powerbi.com/reportEmbed",
+  tenantId: "69da13af-78cb-4dd9-b20c-087550f2b912",
+  reports: {
+    budget: {
+      label: "Budget – Analisi/Previsioni",
+      reportId: "eaf84443-692d-4bd9-aba6-d911dcdfd83d",
+    },
+  },
+};
+
+/* =============================================================================
+ *                         POWER BI REPORT COMPONENT
+ * ========================================================================== */
+
+type PowerBIService = pbi.service.Service;
+type PowerBIReport = pbi.Report;
+type PowerBIEventHandler = (event?: pbi.service.ICustomEvent<any>) => void;
+
+interface PowerBIReportProps {
+  reportId: string;
+  className?: string;
+  pathBase?: string; // es. http://localhost:8081
+}
+
+const PowerBIReportEmbed: React.FC<PowerBIReportProps> = ({ reportId, className, pathBase = "http://localhost:8081" }) => {
+  const reportRef = useRef<HTMLDivElement>(null);
+  const powerbiService = useRef<PowerBIService | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!reportRef.current) return;
+    if (!isFullscreen) {
+      if (reportRef.current.requestFullscreen) {
+        reportRef.current.requestFullscreen()
+          .then(() => setIsFullscreen(true))
+          .catch((err) => console.error("Could not enter fullscreen:", err));
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+          .then(() => setIsFullscreen(false))
+          .catch((err) => console.error("Could not exit fullscreen:", err));
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    let reportInstance: PowerBIReport | null = null;
+
+    const load = async () => {
+      if (!reportId) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+      try {
+        if (isMounted) {
+          setError(null);
+          setLoading(true);
+        }
+
+        const res = await fetch(`${pathBase}/api/pbitoken/embed?reportId=${encodeURIComponent(reportId)}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (!isMounted) return;
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("PBI API error:", text);
+          throw new Error(`Backend PBI: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        if (!data?.token || !data?.embedUrl) {
+          throw new Error("Risposta API incompleta: manca token o embedUrl");
+        }
+
+        // reset eventuale
+        if (powerbiService.current && reportRef.current) {
+          powerbiService.current.reset(reportRef.current);
+        }
+
+        if (!reportRef.current || !isMounted) return;
+
+        if (!powerbiService.current) {
+          powerbiService.current = new pbi.service.Service(
+            pbi.factories.hpmFactory,
+            pbi.factories.wpmpFactory,
+            pbi.factories.routerFactory
+          );
+        }
+
+        const config: pbi.IEmbedConfiguration = {
+          type: "report",
+          id: reportId,
+          embedUrl: data.embedUrl,
+          accessToken: data.token,
+          tokenType: pbi.models.TokenType.Embed,
+          settings: {
+            panes: {
+              filters: { visible: false },
+              pageNavigation: { visible: true },
+            },
+            background: pbi.models.BackgroundType.Transparent,
+            layoutType: pbi.models.LayoutType.Custom,
+            customLayout: {
+              displayOption: pbi.models.DisplayOption.FitToWidth,
+            },
+          },
+        };
+
+        reportInstance = powerbiService.current.embed(reportRef.current, config) as PowerBIReport;
+
+        const loadedHandler: PowerBIEventHandler = () => {
+          if (isMounted) setLoading(false);
+          if (reportInstance) {
+            reportInstance.updateSettings({
+              layoutType: pbi.models.LayoutType.Custom,
+              customLayout: { displayOption: pbi.models.DisplayOption.FitToWidth },
+            }).catch((e: Error) => console.error("Update settings error:", e));
+          }
+        };
+
+        const errorHandler: PowerBIEventHandler = (evt) => {
+          const detail = evt?.detail ? String(evt.detail) : "Unknown";
+          console.error("Power BI error:", detail);
+          if (isMounted) {
+            setError("Errore durante il caricamento del report.");
+            setLoading(false);
+          }
+        };
+
+        reportInstance.on("loaded", loadedHandler);
+        reportInstance.on("error", errorHandler);
+
+      } catch (e: any) {
+        console.error("Embed error:", e);
+        if (isMounted) {
+          setError(e?.message ?? "Errore sconosciuto");
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+      if (reportInstance) {
+        reportInstance.off("loaded");
+        reportInstance.off("error");
+      }
+      if (powerbiService.current && reportRef.current) {
+        try {
+          powerbiService.current.reset(reportRef.current);
+        } catch (e) {
+          console.error("Cleanup PBI error:", e);
+        }
+      }
+    };
+  }, [reportId, pathBase]);
+
+  if (!reportId) return null;
+
+  return (
+    <div className={className}>
+      <div className="flex justify-end items-center mb-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleFullscreen}
+          className="z-10" 
+          title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
+        >
+          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center h-[70vh] w-full p-8">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
+          <p>Caricamento report…</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex flex-col items-center justify-center h-[70vh] w-full p-8">
+          <p className="text-destructive">{error}</p>
+        </div>
+      )}
+
+      <div
+        ref={reportRef}
+        className="w-full h-[70vh] min-h-[400px] rounded-md overflow-hidden"
+        style={{
+          display: loading ? "none" : "block",
+          position: isFullscreen ? "fixed" as const : "relative" as const,
+          top: isFullscreen ? "0" : "auto",
+          left: isFullscreen ? "0" : "auto",
+          right: isFullscreen ? "0" : "auto",
+          bottom: isFullscreen ? "0" : "auto",
+          zIndex: isFullscreen ? 9999 : "auto",
+          background: "transparent",
+        }}
+      />
+    </div>
+  );
+};
+
+/* =============================================================================
+ *                           BUDGET PAGE (MAIN)
+ * ========================================================================== */
 
 interface MeseDati {
   mese: string;
@@ -63,9 +293,8 @@ const euroFormatter = new Intl.NumberFormat("it-IT", {
   maximumFractionDigits: 2,
 });
 
-/* -------------------------------------------------------------------------- */
-/*                                   CARD                                     */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ Budget Card ------------------------------ */
+
 const BudgetCard: React.FC<{
   data: MeseDati;
   idx: number;
@@ -76,9 +305,8 @@ const BudgetCard: React.FC<{
   onLocalPersist: (monthIndex1Based: number, payload: LocalCacheMonth) => void;
 }> = ({ data, idx, updateRow, podCode, anno, onSaveSuccess, onLocalPersist }) => {
   const [isSaving, setIsSaving] = useState(false);
-  const isAllAggregate = podCode === "ALL"; // <- controllo se siamo su tutte le sedi
+  const isAllAggregate = podCode === "ALL";
 
-  // €/kWh corrente = (spesa base / kWh base) * (1 + %prezzo)
   const prezzoEnergia = data.consumiBase > 0
     ? (data.prezzoEnergiaBase / data.consumiBase) * (1 + data.prezzoEnergiaPerc / 100)
     : 0;
@@ -88,10 +316,9 @@ const BudgetCard: React.FC<{
   const spesaTotale = prezzoEnergia * consumi + oneri;
 
   const handleSave = async () => {
-    if (isAllAggregate) return; // su ALL non si salva
+    if (isAllAggregate) return;
     setIsSaving(true);
     try {
-      // POD singolo: salvo solo le %
       const payload = {
         prezzoEnergiaPerc: data.prezzoEnergiaPerc,
         consumiPerc: data.consumiPerc,
@@ -212,9 +439,8 @@ const BudgetCard: React.FC<{
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                                MAIN PAGE                                   */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ MAIN PAGE ------------------------------ */
+
 const BudgetPage: React.FC = () => {
   const [activeTab, setActiveTab]   = useState<TabId>("pbi");
   const [podOptions, setPodOptions] = useState<PodInfo[]>([]);
@@ -312,11 +538,7 @@ const BudgetPage: React.FC = () => {
     };
   };
 
-  /* ----------------------- Mesi consentiti per fallback ---------------------- */
-  // year < currentYear: tutti i mesi (anno passato)
-  // year = currentYear: solo mesi conclusi
-  // year = currentYear+1: solo mesi conclusi (nessun futuro)
-  // year > currentYear+1: no fallback
+  /* ----------------------- mesi consentiti per fallback ---------------------- */
   const allowedFallbackMonths = (year: number) => {
     const now = new Date();
     const currentYear  = now.getFullYear();
@@ -334,7 +556,6 @@ const BudgetPage: React.FC = () => {
     return new Set<number>();
   };
 
-  // Utility: calcola basi "rollate" per l'anno successivo applicando le % dell'anno N
   const rollForwardBases = (rec: any) => {
     const baseCons = Number(rec?.consumiBase ?? 0);
     const baseSpesa = Number(rec?.prezzoEnergiaBase ?? 0);
@@ -344,15 +565,11 @@ const BudgetPage: React.FC = () => {
     const pOneri = Number(rec?.oneriPerc ?? 0) / 100;
 
     const nextConsumi = baseCons * (1 + pCons);
-    const unitPricePrev = baseCons > 0 ? (baseSpesa / baseCons) * (1 + pPrez) : 0; // €/kWh "modificato"
-    const nextSpesa = unitPricePrev * nextConsumi; // € spesa energia "base" per anno N+1
+    const unitPricePrev = baseCons > 0 ? (baseSpesa / baseCons) * (1 + pPrez) : 0;
+    const nextSpesa = unitPricePrev * nextConsumi;
     const nextOneri = baseOneri * (1 + pOneri);
 
-    return {
-      nextConsumi,
-      nextSpesa,
-      nextOneri,
-    };
+    return { nextConsumi, nextSpesa, nextOneri };
   };
 
   const loadForecasts = useCallback(async () => {
@@ -368,7 +585,6 @@ const BudgetPage: React.FC = () => {
       const monthsAllowed = allowedFallbackMonths(year);
 
       const currentYear = new Date().getFullYear();
-      // Non mostrare anni > currentYear+1
       if (year > currentYear + 1) {
         setHasData(false);
         setRows(emptyRows());
@@ -390,7 +606,6 @@ const BudgetPage: React.FC = () => {
           return values.reduce((acc, v, i) => acc + v * (weights[i] || 0), 0) / sumW;
         };
 
-        // Dati anno selezionato
         let perPodAnno = await Promise.all(
           podsSingoli.map(async p => {
             const r = await fetch(`${PATH}/budget/${p.id}/${year}`, { credentials: "include" });
@@ -399,7 +614,6 @@ const BudgetPage: React.FC = () => {
         );
         perPodAnno = perPodAnno.map((arr, i) => applyLocalOverlayToArray(arr, podsSingoli[i].id, year));
 
-        // Dati anno precedente (per fallback)
         let perPodPrev: any[] = [];
         if (monthsAllowed.size > 0) {
           perPodPrev = await Promise.all(
@@ -441,7 +655,6 @@ const BudgetPage: React.FC = () => {
 
           const lcPrevAll = getLocalCache("ALL", prevYear, mese);
 
-          // Nessun dato per i POD: prova fallback da "ALL" (prevYear) -> basi rollate, % = 0
           if (recs.length === 0) {
             if (monthsAllowed.has(mese) && lcPrevAll) {
               const { nextConsumi, nextSpesa, nextOneri } = rollForwardBases(lcPrevAll);
@@ -460,7 +673,6 @@ const BudgetPage: React.FC = () => {
             return buildRowFromRecord(meseNome, null);
           }
 
-          // Calcoli aggregati
           const consumiBases = recs.map(r => Number(r.consumiBase ?? 0));
           const oneriBases   = recs.map(r => Number(r.oneriBase ?? 0));
           const spesaBases   = recs.map(r => Number(r.prezzoEnergiaBase ?? 0));
@@ -474,36 +686,33 @@ const BudgetPage: React.FC = () => {
           let oneriPercAgg         = wavg(recs.map(r => Number(r.oneriPerc ?? 0)),         oneriBases);
 
           const lcCurrent = getLocalCache("ALL", year, mese);
-          const lcPrev    = getLocalCache("ALL", prevYear, mese);
 
           if (lcCurrent && usedAnyAnno) {
-            // Overlay "ALL" anno corrente
             prezzoEnergiaPercAgg = lcCurrent.prezzoEnergiaPerc ?? prezzoEnergiaPercAgg;
             consumiPercAgg       = lcCurrent.consumiPerc       ?? consumiPercAgg;
             oneriPercAgg         = lcCurrent.oneriPerc         ?? oneriPercAgg;
             spesaSum             = lcCurrent.prezzoEnergiaBase ?? spesaSum;
             consumiSum           = lcCurrent.consumiBase       ?? consumiSum;
             oneriSum             = lcCurrent.oneriBase         ?? oneriSum;
-            } else if (!usedAnyAnno && usedAnyPrev && monthsAllowed.has(mese)) {
-              // Fallback: basi "rollate" dei POD, percentuali azzerate
-              let accSpesa = 0;
-              let accCons  = 0;
-              let accOneri = 0;
+          } else if (!usedAnyAnno && usedAnyPrev && monthsAllowed.has(mese)) {
+            let accSpesa = 0;
+            let accCons  = 0;
+            let accOneri = 0;
 
-              for (const r of recs) {
-                const { nextConsumi, nextSpesa: spesaN, nextOneri: oneriN } = rollForwardBases(r);
-                accSpesa += spesaN;
-                accCons  += nextConsumi;
-                accOneri += oneriN;
-              }
-
-              prezzoEnergiaPercAgg = 0;
-              consumiPercAgg       = 0;
-              oneriPercAgg         = 0;
-              spesaSum             = accSpesa;
-              consumiSum           = accCons;
-              oneriSum             = accOneri;
+            for (const r of recs) {
+              const { nextConsumi, nextSpesa: spesaN, nextOneri: oneriN } = rollForwardBases(r);
+              accSpesa += spesaN;
+              accCons  += nextConsumi;
+              accOneri += oneriN;
             }
+
+            prezzoEnergiaPercAgg = 0;
+            consumiPercAgg       = 0;
+            oneriPercAgg         = 0;
+            spesaSum             = accSpesa;
+            consumiSum           = accCons;
+            oneriSum             = accOneri;
+          }
 
           const prezzoEnergia = consumiSum > 0 ? (spesaSum / consumiSum) * (1 + prezzoEnergiaPercAgg / 100) : 0;
           const spesaTotale   = prezzoEnergia * (consumiSum * (1 + consumiPercAgg / 100)) + (oneriSum * (1 + oneriPercAgg / 100));
@@ -550,10 +759,8 @@ const BudgetPage: React.FC = () => {
         ) || null;
 
         if (recAnno) {
-          // Anno corrente: uso basi + percentuali salvate
           return buildRowFromRecord(meseNome, recAnno);
         } else if (recPrev && monthsAllowed.has(mese)) {
-          // Fallback da prevYear: basi "rollate" (applico % dell'anno N), % = 0
           const { nextConsumi, nextSpesa, nextOneri } = rollForwardBases(recPrev);
           return {
             mese: meseNome,
@@ -567,7 +774,6 @@ const BudgetPage: React.FC = () => {
             editable: true,
           };
         } else {
-          // Nessun dato
           return buildRowFromRecord(meseNome, null);
         }
       });
@@ -615,10 +821,8 @@ const BudgetPage: React.FC = () => {
   const handleLocalPersist = useCallback((monthIndex1Based: number, payload: LocalCacheMonth) => {
     if (!pod) return;
 
-    // 1) salva sull’anno corrente (LWW)
     putLocalCache(pod.id, anno, monthIndex1Based, payload);
 
-    // 2) calcola e salva anche le basi "rollate" per l’anno successivo, %=0
     const r = rows[monthIndex1Based - 1];
     if (r) {
       const baseCons = Number(r.consumiBase ?? 0);
@@ -640,7 +844,7 @@ const BudgetPage: React.FC = () => {
         prezzoEnergiaPerc: 0,
         consumiPerc: 0,
         oneriPerc: 0,
-        ts: (payload.ts ?? Date.now()) + 1, // LWW
+        ts: (payload.ts ?? Date.now()) + 1,
       });
     }
   }, [pod, anno, rows, putLocalCache]);
@@ -666,6 +870,8 @@ const BudgetPage: React.FC = () => {
 
   const currentYear = new Date().getFullYear();
 
+  /* ------------------------------ RENDER ------------------------------ */
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
@@ -679,9 +885,11 @@ const BudgetPage: React.FC = () => {
 
       {activeTab === "pbi" ? (
         <Card className="mt-6">
-          <CardHeader />
-          <CardContent className="flex items-center justify-center" style={{ height: 800 }}>
-            <p className="text-sm text-gray-600">Sezione in sviluppo…</p>
+          <CardContent className="pt-4">
+            <PowerBIReportEmbed
+              reportId={energyportfolio.reports.budget.reportId}
+              pathBase={PATH}
+            />
           </CardContent>
         </Card>
       ) : (
