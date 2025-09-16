@@ -280,7 +280,7 @@ const CostiForm = () => {
         } else if (tipoPrezzi === 'indicizzato') {
             return ['f1_spread', 'f2_spread', 'f3_spread'];
         } else if (tipoPrezzi === 'misto' || tipoPrezzi === 'dinamico') {
-            return ['f0', 'f1', 'f2', 'f3'];
+            return ['f1', 'f2', 'f3'];
         }
         return [];
     };
