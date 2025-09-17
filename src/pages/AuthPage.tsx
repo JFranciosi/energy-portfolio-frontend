@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
+import SidebarMenu from "@/components/layout/SidebarMenu";
 import { Eye, EyeOff, AlertCircle, Lock, Mail } from 'lucide-react';
 
 const AuthPage = () => {
@@ -65,6 +66,7 @@ const AuthPage = () => {
 
   return (
     <div>
+      <SidebarMenu />
       <section className="bg-gradient-to-r from-primary to-blue-400 py-16 text-white">
         <div className="container mx-auto px-6 max-w-3xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Area Clienti</h1>

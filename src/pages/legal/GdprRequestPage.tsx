@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import SidebarMenu from '@/components/layout/SidebarMenu';
 import { Checkbox } from "@/components/ui/checkbox";
-import { LegalFooter } from '@/components/legal/LegalFooter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
@@ -77,6 +77,7 @@ const GdprRequestPage = () => {
   
   return (
     <div className="min-h-screen flex flex-col">
+      <SidebarMenu /> 
       <div className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold text-primary mb-2">Richiesta Diritti GDPR</h1>

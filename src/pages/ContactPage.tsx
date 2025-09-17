@@ -11,7 +11,7 @@ import {
   AccordionTrigger 
 } from '@/components/ui/accordion';
 import { MapPin, Mail, Phone, Clock } from 'lucide-react';
-import LayoutPublic from '@/components/layout/LayoutPublic';
+import SidebarMenu from "@/components/layout/SidebarMenu";
 
 const ContactPage = () => {
   const faqs = [
@@ -49,6 +49,7 @@ const ContactPage = () => {
 
   return (
     <div>
+      <SidebarMenu />
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-blue-400 py-16 text-white">
         <div className="container mx-auto px-6">
@@ -57,8 +58,8 @@ const ContactPage = () => {
               Contattaci
             </h1>
             <p className="text-xl text-white/90 mb-8">
-              Siamo qui per rispondere a tutte le tue domande e aiutarti a trovare 
-              la soluzione energetica più adatta alla tua azienda.
+              Ti diamo il benvenuto in MIES. Mettiti in contatto senza alcun impegno,
+              ti risponderemo al più presto!
             </p>
           </div>
         </div>
@@ -161,48 +162,58 @@ const ContactPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
+                    {/* Sede legale */}
                     <div className="flex items-start gap-4">
                       <MapPin className="text-primary shrink-0 mt-1" size={20} />
                       <div>
-                        <h3 className="font-semibold mb-1">Sede principale</h3>
+                        <h3 className="font-semibold mb-1">Sede legale</h3>
                         <p className="text-muted-foreground">
-                          Via Energia 123<br />
-                          20100 Milano (MI)<br />
+                          Via Puricelli 5<br />
+                          21013 Gallarate (VA)<br />
+                          Italia
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Sede operativa */}
+                    <div className="flex items-start gap-4">
+                      <MapPin className="text-primary shrink-0 mt-1" size={20} />
+                      <div>
+                        <h3 className="font-semibold mb-1">Sede operativa</h3>
+                        <p className="text-muted-foreground">
+                          Via Puricelli 5<br />
+                          21013 Gallarate (VA)<br />
                           Italia
                         </p>
                       </div>
                     </div>
                     
+                    {/* Email */}
                     <div className="flex items-start gap-4">
                       <Mail className="text-primary shrink-0 mt-1" size={20} />
                       <div>
                         <h3 className="font-semibold mb-1">Email</h3>
-                        <p className="text-muted-foreground">info@mies.it</p>
-                        <p className="text-muted-foreground text-sm">
-                          Risposta entro 24 ore
-                        </p>
+                        <p className="text-muted-foreground">amministrazione@miesgroup.it</p>
                       </div>
                     </div>
                     
+                    {/* Telefono */}
                     <div className="flex items-start gap-4">
                       <Phone className="text-primary shrink-0 mt-1" size={20} />
                       <div>
                         <h3 className="font-semibold mb-1">Telefono</h3>
-                        <p className="text-muted-foreground">+39 02 1234567</p>
-                        <p className="text-muted-foreground text-sm">
-                          Assistenza tecnica clienti
-                        </p>
+                        <p className="text-muted-foreground">+39 3479410362</p>
                       </div>
                     </div>
 
+                    {/* Orari */}
                     <div className="flex items-start gap-4">
                       <Clock className="text-primary shrink-0 mt-1" size={20} />
                       <div>
                         <h3 className="font-semibold mb-1">Orari di apertura</h3>
                         <p className="text-muted-foreground">
                           Lunedì - Venerdì: 9:00 - 18:00<br />
-                          Sabato: 9:00 - 13:00<br />
-                          Domenica: Chiuso
+                          Sabato - Domenica: Chiuso
                         </p>
                       </div>
                     </div>
@@ -219,7 +230,7 @@ const ContactPage = () => {
                       Mappa interattiva
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Via Energia 123, Milano
+                      Via Puricelli 1, Gallarate (VA)
                     </p>
                   </div>
                 </div>
@@ -273,7 +284,7 @@ const ContactPage = () => {
               size="lg"
               className="bg-white text-primary hover:bg-white/90"
             >
-              Chiama ora: +39 02 1234567
+              Chiama ora: +39 3479410362
             </Button>
             <Button
               size="lg"

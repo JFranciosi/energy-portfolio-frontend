@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 import { ArrowUp, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { LegalFooter } from '@/components/legal/LegalFooter';
+import SidebarMenu from '@/components/layout/SidebarMenu';
 
 const TermsConditionsPage = () => {
   const topRef = useRef<HTMLDivElement>(null);
@@ -19,6 +19,7 @@ const TermsConditionsPage = () => {
   
   return (
     <div className="min-h-screen flex flex-col" ref={topRef}>
+      <SidebarMenu /> 
       <div className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-8 print:mb-4">

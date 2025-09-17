@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
+import SidebarMenu from "@/components/layout/SidebarMenu";
 import {
   Activity,
   Settings,
@@ -146,8 +147,61 @@ const ServicesPage = () => {
     },
   ];
 
+  const [selectedService, setSelectedService] = useState(services[0].id);
+
+  const renderServiceCard = (serviceId: string) => {
+    const service = services.find((s) => s.id === serviceId);
+    if (!service) return null;
+
+    return (
+      <Card className="border-none shadow-lg mt-6">
+        <CardHeader>
+          <div className="flex items-center gap-4 mb-4">
+            <service.icon className="h-10 w-10 text-primary" />
+            <div>
+              <CardTitle className="text-2xl">{service.title}</CardTitle>
+              <p className="text-muted-foreground">{service.description}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 className="font-bold text-lg mb-4 text-primary">Caratteristiche del Servizio</h4>
+              <ul className="space-y-3">
+                {service.features.map((feature, i) => (
+                  <li key={i} className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-lg mb-4 text-primary">Benefici per la Tua Azienda</h4>
+              <ul className="space-y-3">
+                {service.benefits.map((benefit, i) => (
+                  <li key={i} className="flex items-start">
+                    <ArrowRight className="h-5 w-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex gap-4">
+          <Button asChild className="flex-1">
+            <Link to="/contact">Richiedi preventivo</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  };
+
   return (
     <div>
+      <SidebarMenu />
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-blue-400 py-16 text-white">
         <div className="container mx-auto px-6">
@@ -161,71 +215,63 @@ const ServicesPage = () => {
         </div>
       </section>
 
-      {/* I Nostri Servizzi */}
+      {/* I Nostri Servizi */}
       <section className="container mx-auto px-6 py-16">
-        <Tabs defaultValue="diagnosi" className="w-full">
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8 h-auto">
-            {services.map((service) => (
-              <TabsTrigger
-                key={service.id}
-                value={service.id}
-                className="text-xs whitespace-nowrap px-2 py-3"
-              >
-                {service.title.split(' ')[0]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
+      {/* Dropdown su mobile */}
+    <div className="block md:hidden mb-6">
+      <div className="relative">
+        <select
+          value={selectedService}
+          onChange={(e) => setSelectedService(e.target.value)}
+          className="w-full appearance-none border border-border rounded-lg p-3 pr-10 text-sm bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        >
           {services.map((service) => (
-            <TabsContent key={service.id} value={service.id} className="mt-8">
-              <Card className="border-none shadow-lg">
-                <CardHeader>
-                  <div className="flex items-center gap-4 mb-4">
-                    <service.icon className="h-10 w-10 text-primary" />
-                    <div>
-                      <CardTitle className="text-2xl">{service.title}</CardTitle>
-                      <p className="text-muted-foreground">{service.description}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <h4 className="font-bold text-lg mb-4 text-primary">Caratteristiche del Servizio</h4>
-                      <ul className="space-y-3">
-                        {service.features.map((feature, i) => (
-                          <li key={i} className="flex items-start">
-                            <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg mb-4 text-primary">Benefici per la Tua Azienda</h4>
-                      <ul className="space-y-3">
-                        {service.benefits.map((benefit, i) => (
-                          <li key={i} className="flex items-start">
-                            <ArrowRight className="h-5 w-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm">{benefit}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex gap-4">
-                  <Button asChild className="flex-1">
-                    <Link to="/contact">Richiedi preventivo</Link>
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    Scarica brochure
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
+            <option key={service.id} value={service.id}>
+              {service.title}
+            </option>
           ))}
-        </Tabs>
+        </select>
+        {/* Icona freccia custom */}
+        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+          <svg
+            className="w-4 h-4 text-muted-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Card con animazione */}
+      <div className="mt-6 transition-all duration-300 ease-in-out">
+        {renderServiceCard(selectedService)}
+      </div>
+    </div>
+
+        {/* Tabs su desktop */}
+        <div className="hidden md:block">
+          <Tabs defaultValue="diagnosi" className="w-full">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8 h-auto">
+              {services.map((service) => (
+                <TabsTrigger
+                  key={service.id}
+                  value={service.id}
+                  className="text-xs whitespace-nowrap px-2 py-3"
+                >
+                  {service.title.split(' ')[0]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {services.map((service) => (
+              <TabsContent key={service.id} value={service.id} className="mt-8">
+                {renderServiceCard(service.id)}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
       </section>
     </div>
   );

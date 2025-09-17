@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Swal from "sweetalert2";
-import { Download, Maximize, Minimize, BarChart3 } from "lucide-react";
+import { Download, Maximize, Minimize, BarChart3, RefreshCw } from "lucide-react";
 import * as pbi from "powerbi-client";
+import { useToast } from "@/components/ui/use-toast";
 
 /* =============================================================================
  *                         CONFIG REPORT POWER BI (FE)
@@ -442,6 +443,7 @@ const BudgetCard: React.FC<{
 /* ------------------------------ MAIN PAGE ------------------------------ */
 
 const BudgetPage: React.FC = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab]   = useState<TabId>("pbi");
   const [podOptions, setPodOptions] = useState<PodInfo[]>([]);
   const [pod, setPod]               = useState<PodInfo | null>(null);
@@ -449,6 +451,9 @@ const BudgetPage: React.FC = () => {
 
   const [rows, setRows]   = useState<MeseDati[]>([]);
   const [hasData, setHasData] = useState(true);
+
+  // Stato refresh dataset Power BI
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Cache locale
   const localCacheRef = useRef<LocalCache>({});
@@ -868,17 +873,52 @@ const BudgetPage: React.FC = () => {
     }
   };
 
+  /* ------------------------- REFRESH DATASET PBI ---------------------- */
+  const handleRefreshDataset = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch(`${PATH}/api/pbi/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Refresh fallito: ${res.status} ${text}`);
+      }
+      toast({ title: "Refresh avviato", description: "Il dataset Power BI è in aggiornamento." });
+    } catch (e: any) {
+      toast({ title: "Errore refresh", description: e.message ?? "Errore sconosciuto", variant: "destructive" });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const currentYear = new Date().getFullYear();
 
   /* ------------------------------ RENDER ------------------------------ */
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Budget Energia</h1>
-        <p className="text-lg text-gray-700">
-          Pianifica, monitora e ottimizza il budget energetico della tua azienda
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Budget Energia</h1>
+          <p className="text-lg text-gray-700">
+            Pianifica, monitora e ottimizza il budget energetico della tua azienda
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefreshDataset}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+            title="Forza l'aggiornamento del dataset Power BI (ricarica dai proxy)"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "Aggiornamento..." : "Aggiorna dati"}
+          </Button>
+        </div>
       </div>
 
       <SecondaryNavbar items={NAV_TABS} activeItemId={activeTab} onItemClick={setActiveTab} />
