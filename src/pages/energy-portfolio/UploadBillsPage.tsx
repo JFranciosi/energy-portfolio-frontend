@@ -289,6 +289,56 @@ const CostiForm: React.FC = () => {
         }
     };
 
+    const rimuoviPeriodo = async (id: string, periodo: PeriodoCosti) => {
+        if (!energyCostId) {
+            // Se è un periodo non ancora salvato, rimuovilo solo localmente
+            setCostiDinamici(prev => ({
+                ...prev,
+                periodi: prev.periodi.filter(p => p.id !== id)
+            }));
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `${PATH_DEV}/costi-periodi/${energyCostId}/${periodo.meseInizio}`,
+                {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            if (response.ok) {
+                // Rimuovi il periodo dall'interfaccia solo se l'eliminazione è avvenuta con successo
+                setCostiDinamici(prev => ({
+                    ...prev,
+                    periodi: prev.periodi.filter(p => p.id !== id)
+                }));
+
+                toast({
+                    title: "Successo",
+                    description: "Periodo eliminato con successo",
+                });
+            } else {
+                const errorData = await response.json();
+                toast({
+                    title: "Errore",
+                    description: errorData.error || "Impossibile eliminare il periodo",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            toast({
+                title: "Errore",
+                description: "Errore di rete durante l'eliminazione",
+                variant: "destructive",
+            });
+        }
+    };
+
     const fetchPeriodiDinamici = async (energyCostId: number) => {
         try {
             const response = await fetch(`${PATH_DEV}/costi-energia/${energyCostId}/periodi-dinamici`, {
@@ -527,13 +577,6 @@ const CostiForm: React.FC = () => {
         }));
     };
 
-
-    const rimuoviPeriodo = (id: string) => {
-        setCostiDinamici(prev => ({
-            ...prev,
-            periodi: prev.periodi.filter(p => p.id !== id)
-        }));
-    };
 
     const aggiornaPeriodo = (id: string, campo: keyof CostiState, valore: number) => {
         setCostiDinamici(prev => ({
@@ -775,7 +818,7 @@ const CostiForm: React.FC = () => {
                                         </CardTitle>
                                         {costiDinamici.periodi.length > 1 && (
                                             <Button
-                                                onClick={() => rimuoviPeriodo(periodo.id)}
+                                                onClick={() => rimuoviPeriodo(periodo.id, periodo)}
                                                 variant="outline"
                                                 size="sm"
                                                 className="text-red-600 hover:text-red-800"
