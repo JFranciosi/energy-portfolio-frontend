@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Swal from "sweetalert2";
-import { Download, Maximize, Minimize, BarChart3, RefreshCw } from "lucide-react";
+import { Download, Maximize, Minimize, RefreshCw } from "lucide-react";
 import * as pbi from "powerbi-client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -20,7 +20,7 @@ const energyportfolio = {
   reports: {
     budget: {
       label: "Budget – Analisi/Previsioni",
-      reportId: "eaf84443-692d-4bd9-aba6-d911dcdfd83d",
+      reportId: "ceb76cd4-841b-45d7-bc66-17d700ab513a",
     },
   },
 };
@@ -33,207 +33,260 @@ type PowerBIService = pbi.service.Service;
 type PowerBIReport = pbi.Report;
 type PowerBIEventHandler = (event?: pbi.service.ICustomEvent<any>) => void;
 
+export interface PowerBIReportHandle {
+  refresh: () => Promise<void>;
+  reload: () => Promise<void>;
+}
+
 interface PowerBIReportProps {
   reportId: string;
   className?: string;
-  pathBase?: string; // es. http://localhost:8081
+  pathBase?: string;
+  pod?: string;
+  anno?: number;
 }
 
-const PowerBIReportEmbed: React.FC<PowerBIReportProps> = ({ reportId, className, pathBase = "http://localhost:8081" }) => {
-  const reportRef = useRef<HTMLDivElement>(null);
-  const powerbiService = useRef<PowerBIService | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+const PowerBIReportEmbed = React.forwardRef<PowerBIReportHandle, PowerBIReportProps>(
+  ({ reportId, className, pathBase = "http://localhost:8081", pod, anno }, ref) => {
+    const reportRef = useRef<HTMLDivElement>(null);
+    const powerbiService = useRef<PowerBIService | null>(null);
+    const reportObjRef = useRef<PowerBIReport | null>(null);
 
-  const toggleFullscreen = () => {
-    if (!reportRef.current) return;
-    if (!isFullscreen) {
-      if (reportRef.current.requestFullscreen) {
-        reportRef.current.requestFullscreen()
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const toggleFullscreen = () => {
+      if (!reportRef.current) return;
+      if (!isFullscreen) {
+        reportRef.current
+          .requestFullscreen?.()
           .then(() => setIsFullscreen(true))
           .catch((err) => console.error("Could not enter fullscreen:", err));
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen()
+      } else {
+        document
+          .exitFullscreen?.()
           .then(() => setIsFullscreen(false))
           .catch((err) => console.error("Could not exit fullscreen:", err));
       }
-    }
-  };
+    };
 
-  useEffect(() => {
-    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFsChange);
-    return () => document.removeEventListener("fullscreenchange", handleFsChange);
-  }, []);
+    useEffect(() => {
+      const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+      document.addEventListener("fullscreenchange", handleFsChange);
+      return () => document.removeEventListener("fullscreenchange", handleFsChange);
+    }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-    let reportInstance: PowerBIReport | null = null;
+    useEffect(() => {
+      let isMounted = true;
+      let reportInstance: PowerBIReport | null = null;
+      let cleanupHandlers: (() => void) | undefined;
 
-    const load = async () => {
-      if (!reportId) {
-        if (isMounted) setLoading(false);
-        return;
-      }
-      try {
-        if (isMounted) {
-          setError(null);
-          setLoading(true);
-        }
-
-        const res = await fetch(`${pathBase}/api/pbitoken/embed?reportId=${encodeURIComponent(reportId)}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-
-        if (!isMounted) return;
-
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("PBI API error:", text);
-          throw new Error(`Backend PBI: ${res.status} ${res.statusText}`);
-        }
-
-        const data = await res.json();
-        if (!data?.token || !data?.embedUrl) {
-          throw new Error("Risposta API incompleta: manca token o embedUrl");
-        }
-
-        // reset eventuale
-        if (powerbiService.current && reportRef.current) {
-          powerbiService.current.reset(reportRef.current);
-        }
-
-        if (!reportRef.current || !isMounted) return;
-
-        if (!powerbiService.current) {
-          powerbiService.current = new pbi.service.Service(
-            pbi.factories.hpmFactory,
-            pbi.factories.wpmpFactory,
-            pbi.factories.routerFactory
-          );
-        }
-
-        const config: pbi.IEmbedConfiguration = {
-          type: "report",
-          id: reportId,
-          embedUrl: data.embedUrl,
-          accessToken: data.token,
-          tokenType: pbi.models.TokenType.Embed,
-          settings: {
-            panes: {
-              filters: { visible: false },
-              pageNavigation: { visible: true },
-            },
-            background: pbi.models.BackgroundType.Transparent,
-            layoutType: pbi.models.LayoutType.Custom,
-            customLayout: {
-              displayOption: pbi.models.DisplayOption.FitToWidth,
-            },
-          },
-        };
-
-        reportInstance = powerbiService.current.embed(reportRef.current, config) as PowerBIReport;
-
-        const loadedHandler: PowerBIEventHandler = () => {
+      const load = async () => {
+        if (!reportId) {
           if (isMounted) setLoading(false);
-          if (reportInstance) {
-            reportInstance.updateSettings({
-              layoutType: pbi.models.LayoutType.Custom,
-              customLayout: { displayOption: pbi.models.DisplayOption.FitToWidth },
-            }).catch((e: Error) => console.error("Update settings error:", e));
-          }
-        };
-
-        const errorHandler: PowerBIEventHandler = (evt) => {
-          const detail = evt?.detail ? String(evt.detail) : "Unknown";
-          console.error("Power BI error:", detail);
+          return;
+        }
+        try {
           if (isMounted) {
-            setError("Errore durante il caricamento del report.");
+            setError(null);
+            setLoading(true);
+          }
+
+          const res = await fetch(
+            `${pathBase}/api/pbitoken/embed?reportId=${encodeURIComponent(reportId)}`,
+            {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+            }
+          );
+
+          if (!isMounted) return;
+
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("PBI API error:", text);
+            throw new Error(`Backend PBI: ${res.status} ${res.statusText}`);
+          }
+
+          const data = await res.json();
+          if (!data?.token || !data?.embedUrl) {
+            throw new Error("Risposta API incompleta: manca token o embedUrl");
+          }
+
+          if (powerbiService.current && reportRef.current) {
+            powerbiService.current.reset(reportRef.current);
+          }
+
+          if (!reportRef.current || !isMounted) return;
+
+          if (!powerbiService.current) {
+            powerbiService.current = new pbi.service.Service(
+              pbi.factories.hpmFactory,
+              pbi.factories.wpmpFactory,
+              pbi.factories.routerFactory
+            );
+          }
+
+          const config: pbi.IEmbedConfiguration = {
+            type: "report",
+            id: reportId,
+            embedUrl: data.embedUrl,
+            accessToken: data.token,
+            tokenType: pbi.models.TokenType.Embed,
+            settings: {
+              panes: {
+                filters: { visible: false },
+                pageNavigation: { visible: true },
+              },
+              background: pbi.models.BackgroundType.Transparent,
+              layoutType: pbi.models.LayoutType.Custom,
+              customLayout: {
+                displayOption: pbi.models.DisplayOption.FitToWidth,
+              },
+            },
+          };
+
+          reportInstance = powerbiService.current.embed(reportRef.current, config) as PowerBIReport;
+          reportObjRef.current = reportInstance;
+
+          const loadedHandler: PowerBIEventHandler = () => {
+            if (isMounted) setLoading(false);
+            reportInstance
+              ?.updateSettings({
+                layoutType: pbi.models.LayoutType.Custom,
+                customLayout: { displayOption: pbi.models.DisplayOption.FitToWidth },
+              })
+              .catch((e: Error) => console.error("Update settings error:", e));
+          };
+
+          const errorHandler: PowerBIEventHandler = (evt) => {
+            const detail = evt?.detail ? String(evt.detail) : "Unknown";
+            console.error("Power BI error:", detail);
+            if (isMounted) {
+              setLoading(false);
+            }
+          };
+
+          reportInstance.on("loaded", loadedHandler);
+          reportInstance.on("error", errorHandler);
+
+          cleanupHandlers = () => {
+            reportInstance?.off("loaded", loadedHandler);
+            reportInstance?.off("error", errorHandler);
+          };
+        } catch (e: any) {
+          console.error("Embed error:", e);
+          if (isMounted) {
+            setError(e?.message ?? "Errore sconosciuto");
             setLoading(false);
           }
-        };
-
-        reportInstance.on("loaded", loadedHandler);
-        reportInstance.on("error", errorHandler);
-
-      } catch (e: any) {
-        console.error("Embed error:", e);
-        if (isMounted) {
-          setError(e?.message ?? "Errore sconosciuto");
-          setLoading(false);
         }
-      }
-    };
+      };
 
-    load();
+      load();
 
-    return () => {
-      isMounted = false;
-      if (reportInstance) {
-        reportInstance.off("loaded");
-        reportInstance.off("error");
-      }
-      if (powerbiService.current && reportRef.current) {
-        try {
-          powerbiService.current.reset(reportRef.current);
-        } catch (e) {
-          console.error("Cleanup PBI error:", e);
+      return () => {
+        isMounted = false;
+        cleanupHandlers?.();
+        if (powerbiService.current && reportRef.current) {
+          try {
+            powerbiService.current.reset(reportRef.current);
+          } catch (e) {
+            console.error("Cleanup PBI error:", e);
+          }
         }
-      }
-    };
-  }, [reportId, pathBase]);
+        reportObjRef.current = null;
+      };
+    }, [reportId, pathBase]);
 
-  if (!reportId) return null;
+    // 🔹 Applica i filtri quando cambiano pod o anno
+    useEffect(() => {
+      if (!reportObjRef.current || !pod || !anno) return;
 
-  return (
-    <div className={className}>
-      <div className="flex justify-end items-center mb-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleFullscreen}
-          className="z-10" 
-          title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
-        >
-          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-        </Button>
+      const filterPod: pbi.models.IBasicFilter = {
+        $schema: "http://powerbi.com/product/schema#basic",
+        target: { table: "Budget", column: "id_pod" },
+        operator: "In",
+        values: [pod],
+        filterType: pbi.models.FilterType.Advanced
+      };
+
+      const filterAnno: pbi.models.IBasicFilter = {
+        $schema: "http://powerbi.com/product/schema#basic",
+        target: { table: "Budget", column: "Anno" },
+        operator: "In",
+        values: [anno],
+        filterType: pbi.models.FilterType.Advanced
+      };
+
+      reportObjRef.current.setFilters([filterPod, filterAnno]).catch((err) => {
+        console.error("Errore applicando i filtri:", err);
+      });
+    }, [pod, anno]);
+
+    React.useImperativeHandle(ref, () => ({
+      refresh: async () => {
+        if (reportObjRef.current) {
+          await reportObjRef.current.refresh();
+        }
+      },
+      reload: async () => {
+        if (reportObjRef.current) {
+          await reportObjRef.current.reload();
+        }
+      },
+    }));
+
+    if (!reportId) return null;
+
+    return (
+      <div className={className}>
+        <div className="flex justify-end items-center mb-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="z-10"
+            title={isFullscreen ? "Esci da schermo intero" : "Schermo intero"}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="flex flex-col items-center justify-center h-[70vh] w-full p-8">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
+            <p>Caricamento report…</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex flex-col items-center justify-center h-[70vh] w-full p-8">
+            <p className="text-destructive">{error}</p>
+          </div>
+        )}
+
+        <div
+          ref={reportRef}
+          className="w-full h-[70vh] min-h-[400px] rounded-md overflow-hidden"
+          style={{
+            display: loading ? "none" : "block",
+            position: isFullscreen ? "fixed" as const : "relative" as const,
+            top: isFullscreen ? "0" : "auto",
+            left: isFullscreen ? "0" : "auto",
+            right: isFullscreen ? "0" : "auto",
+            bottom: isFullscreen ? "0" : "auto",
+            zIndex: isFullscreen ? 9999 : "auto",
+            background: "transparent",
+          }}
+        />
       </div>
-
-      {loading && (
-        <div className="flex flex-col items-center justify-center h-[70vh] w-full p-8">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
-          <p>Caricamento report…</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="flex flex-col items-center justify-center h-[70vh] w-full p-8">
-          <p className="text-destructive">{error}</p>
-        </div>
-      )}
-
-      <div
-        ref={reportRef}
-        className="w-full h-[70vh] min-h-[400px] rounded-md overflow-hidden"
-        style={{
-          display: loading ? "none" : "block",
-          position: isFullscreen ? "fixed" as const : "relative" as const,
-          top: isFullscreen ? "0" : "auto",
-          left: isFullscreen ? "0" : "auto",
-          right: isFullscreen ? "0" : "auto",
-          bottom: isFullscreen ? "0" : "auto",
-          zIndex: isFullscreen ? 9999 : "auto",
-          background: "transparent",
-        }}
-      />
-    </div>
-  );
-};
+    );
+  }
+);
+PowerBIReportEmbed.displayName = "PowerBIReportEmbed";
 
 /* =============================================================================
  *                           BUDGET PAGE (MAIN)
@@ -245,9 +298,9 @@ interface MeseDati {
   consumiPerc: number;
   oneriPerc: number;
   prezzoEnergiaBase: number; // € spesa energia "base"
-  consumiBase: number;       // kWh "base"
-  oneriBase: number;         // € "base"
-  spesaTotale: number;       // € calcolata
+  consumiBase: number; // kWh "base"
+  oneriBase: number; // € "base"
+  spesaTotale: number; // € calcolata
   editable: boolean;
 }
 
@@ -274,15 +327,24 @@ type LocalCache = {
   };
 };
 
-const PATH   = "http://localhost:8081";
-const YEARS  = Array.from({ length: 8 }, (_, i) => 2023 + i);
+const PATH = "http://localhost:8081";
+const YEARS = Array.from({ length: 8 }, (_, i) => 2023 + i);
 const MONTHS = [
-  "Gennaio","Febbraio","Marzo","Aprile",
-  "Maggio","Giugno","Luglio","Agosto",
-  "Settembre","Ottobre","Novembre","Dicembre",
+  "Gennaio",
+  "Febbraio",
+  "Marzo",
+  "Aprile",
+  "Maggio",
+  "Giugno",
+  "Luglio",
+  "Agosto",
+  "Settembre",
+  "Ottobre",
+  "Novembre",
+  "Dicembre",
 ];
 const NAV_TABS: NavItem[] = [
-  { id: "pbi",    label: "Analisi Budget" },
+  { id: "pbi", label: "Analisi Budget" },
   { id: "budget", label: "Previsioni Budget" },
 ];
 type TabId = NavItem["id"];
@@ -308,9 +370,7 @@ const BudgetCard: React.FC<{
   const [isSaving, setIsSaving] = useState(false);
   const isAllAggregate = podCode === "ALL";
 
-  const prezzoEnergia = data.consumiBase > 0
-    ? (data.prezzoEnergiaBase / data.consumiBase) * (1 + data.prezzoEnergiaPerc / 100)
-    : 0;
+  const prezzoEnergia = data.consumiBase > 0 ? (data.prezzoEnergiaBase / data.consumiBase) * (1 + data.prezzoEnergiaPerc / 100) : 0;
 
   const consumi = data.consumiBase * (1 + data.consumiPerc / 100);
   const oneri = data.oneriBase * (1 + data.oneriPerc / 100);
@@ -365,8 +425,8 @@ const BudgetCard: React.FC<{
           <CardContent className="p-0 pt-4 flex flex-col gap-6">
             {[
               { label: "Prezzo Energia", baseValue: `${prezzoEnergia.toFixed(4)} €/kWh`, percValue: data.prezzoEnergiaPerc },
-              { label: "Consumi",        baseValue: `${consumi.toFixed(2)} kWh`,         percValue: data.consumiPerc },
-              { label: "Oneri",          baseValue: euroFormatter.format(oneri),         percValue: data.oneriPerc },
+              { label: "Consumi", baseValue: `${consumi.toFixed(2)} kWh`, percValue: data.consumiPerc },
+              { label: "Oneri", baseValue: euroFormatter.format(oneri), percValue: data.oneriPerc },
             ].map(({ label, baseValue, percValue }) => (
               <div key={label} className="flex items-center justify-between gap-6">
                 <div className="flex flex-col">
@@ -374,9 +434,7 @@ const BudgetCard: React.FC<{
                   <div className="font-bold text-lg">{baseValue}</div>
                 </div>
                 <div className="flex flex-col items-end min-w-[80px]">
-                  <span className="text-xs text-gray-500">
-                    ({percValue >= 0 ? "+" : ""}{percValue.toFixed(1)}%)
-                  </span>
+                  <span className="text-xs text-gray-500">({percValue >= 0 ? "+" : ""}{percValue.toFixed(1)}%)</span>
                 </div>
               </div>
             ))}
@@ -390,17 +448,15 @@ const BudgetCard: React.FC<{
 
         {/* Destra */}
         <div className="flex-2 flex flex-col justify-center p-5 gap-12 border-l border-gray-100 bg-gray-50 pt-12">
-          {["prezzoEnergiaPerc", "consumiPerc", "oneriPerc"].map(field => {
-            const value = data[field as keyof MeseDati] as number;
-            const pos   = (value + 100) / 2;
-            const bg    = `linear-gradient(to right,#2563eb 0%,#2563eb ${pos}%,#e5e7eb ${pos}%,#e5e7eb 100%)`;
+          {(["prezzoEnergiaPerc", "consumiPerc", "oneriPerc"] as const).map((field) => {
+            const value = data[field] as number;
+            const pos = (value + 100) / 2;
+            const bg = `linear-gradient(to right,#2563eb 0%,#2563eb ${pos}%,#e5e7eb ${pos}%,#e5e7eb 100%)`;
 
             return (
               <div key={field} className="flex flex-col gap-2">
                 <Label className="block text-sm font-medium mb-1">
-                  {field === "prezzoEnergiaPerc" ? "Prezzo Energia (%)" :
-                   field === "consumiPerc"       ? "Consumi (%)" :
-                                                    "Oneri (%)"}
+                  {field === "prezzoEnergiaPerc" ? "Prezzo Energia (%)" : field === "consumiPerc" ? "Consumi (%)" : "Oneri (%)"}
                 </Label>
                 <input
                   type="range"
@@ -408,10 +464,16 @@ const BudgetCard: React.FC<{
                   max={100}
                   step={1}
                   value={value}
-                  onChange={e => updateRow(idx, field as any, Number(e.target.value))}
+                  onChange={(e) => updateRow(idx, field, Number(e.target.value) as any)}
                   className="w-full h-3 rounded-lg cursor-pointer"
                   disabled={!data.editable}
-                  style={{ background: bg, WebkitAppearance: "none", MozAppearance: "none", appearance: "none", accentColor: "#2563eb" }}
+                  style={{
+                    background: bg,
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    appearance: "none",
+                    accentColor: "#2563eb",
+                  }}
                 />
               </div>
             );
@@ -422,17 +484,15 @@ const BudgetCard: React.FC<{
             onClick={isAllAggregate ? undefined : handleSave}
             disabled={isAllAggregate || isSaving || !data.editable}
             className={`mt-auto shadow disabled:opacity-50 ${
-              isAllAggregate
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
+              isAllAggregate ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
-            title={isAllAggregate ? "Su Tutte le sedi il salvataggio è disabilitato. Modifica i singoli POD: l’aggregato si aggiorna da solo." : undefined}
+            title={
+              isAllAggregate
+                ? "Su Tutte le sedi il salvataggio è disabilitato. Modifica i singoli POD: l’aggregato si aggiorna da solo."
+                : undefined
+            }
           >
-            {isAllAggregate
-              ? "Salva"
-              : isSaving
-                ? <span className="animate-pulse">Salvataggio…</span>
-                : "Salva"}
+            {isAllAggregate ? "Salva" : isSaving ? <span className="animate-pulse">Salvataggio…</span> : "Salva"}
           </Button>
         </div>
       </div>
@@ -444,16 +504,19 @@ const BudgetCard: React.FC<{
 
 const BudgetPage: React.FC = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab]   = useState<TabId>("pbi");
+  const [activeTab, setActiveTab] = useState<TabId>("pbi");
   const [podOptions, setPodOptions] = useState<PodInfo[]>([]);
-  const [pod, setPod]               = useState<PodInfo | null>(null);
-  const [anno, setAnno]             = useState<number>(new Date().getFullYear());
+  const [pod, setPod] = useState<PodInfo | null>(null);
+  const [anno, setAnno] = useState<number>(new Date().getFullYear());
 
-  const [rows, setRows]   = useState<MeseDati[]>([]);
+  const [rows, setRows] = useState<MeseDati[]>([]);
   const [hasData, setHasData] = useState(true);
 
   // Stato refresh dataset Power BI
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Handle al report per richiamare refresh dopo i proxy
+  const reportHandleRef = useRef<PowerBIReportHandle | null>(null);
 
   // Cache locale
   const localCacheRef = useRef<LocalCache>({});
@@ -471,25 +534,28 @@ const BudgetPage: React.FC = () => {
     return localCacheRef.current[podId]?.[year]?.[month];
   }, []);
 
-  const applyLocalOverlayToArray = useCallback((arr: any[], podId: string, year: number) => {
-    return (arr || []).map((rec: any) => {
-      const month = Number(rec?.mese);
-      const lc = getLocalCache(podId, year, month);
-      if (!lc) return rec;
-      return {
-        ...rec,
-        prezzoEnergiaPerc: lc.prezzoEnergiaPerc ?? rec.prezzoEnergiaPerc,
-        consumiPerc:       lc.consumiPerc       ?? rec.consumiPerc,
-        oneriPerc:         lc.oneriPerc         ?? rec.oneriPerc,
-        prezzoEnergiaBase: lc.prezzoEnergiaBase ?? rec.prezzoEnergiaBase,
-        consumiBase:       lc.consumiBase       ?? rec.consumiBase,
-        oneriBase:         lc.oneriBase         ?? rec.oneriBase,
-      };
-    });
-  }, [getLocalCache]);
+  const applyLocalOverlayToArray = useCallback(
+    (arr: any[], podId: string, year: number) => {
+      return (arr || []).map((rec: any) => {
+        const month = Number(rec?.mese);
+        const lc = getLocalCache(podId, year, month);
+        if (!lc) return rec;
+        return {
+          ...rec,
+          prezzoEnergiaPerc: lc.prezzoEnergiaPerc ?? rec.prezzoEnergiaPerc,
+          consumiPerc: lc.consumiPerc ?? rec.consumiPerc,
+          oneriPerc: lc.oneriPerc ?? rec.oneriPerc,
+          prezzoEnergiaBase: lc.prezzoEnergiaBase ?? rec.prezzoEnergiaBase,
+          consumiBase: lc.consumiBase ?? rec.consumiBase,
+          oneriBase: lc.oneriBase ?? rec.oneriBase,
+        };
+      });
+    },
+    [getLocalCache]
+  );
 
   const emptyRows = () =>
-    MONTHS.map(m => ({
+    MONTHS.map((m) => ({
       mese: m,
       prezzoEnergiaPerc: 0,
       consumiPerc: 0,
@@ -517,18 +583,18 @@ const BudgetPage: React.FC = () => {
     }
 
     const prezzoEnergiaBase = Number(rec?.prezzoEnergiaBase ?? 0);
-    const consumiBase       = Number(rec?.consumiBase ?? 0);
-    const oneriBase         = Number(rec?.oneriBase ?? 0);
-    const prezzoPerc        = Number(rec?.prezzoEnergiaPerc ?? 0);
-    const consumiPerc       = Number(rec?.consumiPerc ?? 0);
-    const oneriPerc         = Number(rec?.oneriPerc ?? 0);
+    const consumiBase = Number(rec?.consumiBase ?? 0);
+    const oneriBase = Number(rec?.oneriBase ?? 0);
+    const prezzoPerc = Number(rec?.prezzoEnergiaPerc ?? 0);
+    const consumiPerc = Number(rec?.consumiPerc ?? 0);
+    const oneriPerc = Number(rec?.oneriPerc ?? 0);
 
     const prezzoEnergia = consumiBase > 0 ? (prezzoEnergiaBase / consumiBase) * (1 + prezzoPerc / 100) : 0;
-    const consumi       = consumiBase * (1 + consumiPerc / 100);
-    const oneri         = oneriBase * (1 + oneriPerc / 100);
-    const spesaTotale   = prezzoEnergia * consumi + oneri;
+    const consumi = consumiBase * (1 + consumiPerc / 100);
+    const oneri = oneriBase * (1 + oneriPerc / 100);
+    const spesaTotale = prezzoEnergia * consumi + oneri;
 
-    const hasAnyData = (consumiBase > 0 || oneriBase > 0 || prezzoEnergiaBase > 0);
+    const hasAnyData = consumiBase > 0 || oneriBase > 0 || prezzoEnergiaBase > 0;
 
     return {
       mese: meseNome,
@@ -546,7 +612,7 @@ const BudgetPage: React.FC = () => {
   /* ----------------------- mesi consentiti per fallback ---------------------- */
   const allowedFallbackMonths = (year: number) => {
     const now = new Date();
-    const currentYear  = now.getFullYear();
+    const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1; // 1..12
 
     if (year < currentYear) {
@@ -598,7 +664,7 @@ const BudgetPage: React.FC = () => {
 
       /* ---------------------------- POD = ALL --------------------------- */
       if (pod.id === "ALL") {
-        const podsSingoli = podOptions.filter(p => p.id !== "ALL");
+        const podsSingoli = podOptions.filter((p) => p.id !== "ALL");
         if (podsSingoli.length === 0) {
           setHasData(false);
           setRows(emptyRows());
@@ -612,7 +678,7 @@ const BudgetPage: React.FC = () => {
         };
 
         let perPodAnno = await Promise.all(
-          podsSingoli.map(async p => {
+          podsSingoli.map(async (p) => {
             const r = await fetch(`${PATH}/budget/${p.id}/${year}`, { credentials: "include" });
             return r.ok ? await r.json() : [];
           })
@@ -622,7 +688,7 @@ const BudgetPage: React.FC = () => {
         let perPodPrev: any[] = [];
         if (monthsAllowed.size > 0) {
           perPodPrev = await Promise.all(
-            podsSingoli.map(async p => {
+            podsSingoli.map(async (p) => {
               const r = await fetch(`${PATH}/budget/${p.id}/${prevYear}`, { credentials: "include" });
               return r.ok ? await r.json() : [];
             })
@@ -639,16 +705,14 @@ const BudgetPage: React.FC = () => {
             const arrA = perPodAnno[i] || [];
             const arrP = perPodPrev[i] || [];
 
-            let rec = arrA.find((d: any) =>
-              d.mese === mese && Number(d.anno) === year
-            ) || null;
+            let rec =
+              arrA.find((d: any) => d.mese === mese && Number(d.anno) === year) || null;
 
             if (rec) {
               usedAnyAnno = true;
             } else if (monthsAllowed.has(mese)) {
-              const prevRec = arrP.find((d: any) =>
-                d.mese === mese && Number(d.anno) === prevYear
-              ) || null;
+              const prevRec =
+                arrP.find((d: any) => d.mese === mese && Number(d.anno) === prevYear) || null;
               if (prevRec) {
                 rec = prevRec;
                 usedAnyPrev = true;
@@ -678,49 +742,50 @@ const BudgetPage: React.FC = () => {
             return buildRowFromRecord(meseNome, null);
           }
 
-          const consumiBases = recs.map(r => Number(r.consumiBase ?? 0));
-          const oneriBases   = recs.map(r => Number(r.oneriBase ?? 0));
-          const spesaBases   = recs.map(r => Number(r.prezzoEnergiaBase ?? 0));
+          const consumiBases = recs.map((r) => Number(r.consumiBase ?? 0));
+          const oneriBases = recs.map((r) => Number(r.oneriBase ?? 0));
+          const spesaBases = recs.map((r) => Number(r.prezzoEnergiaBase ?? 0));
 
           let consumiSum = consumiBases.reduce((a, b) => a + b, 0);
-          let oneriSum   = oneriBases.reduce((a, b) => a + b, 0);
-          let spesaSum   = spesaBases.reduce((a, b) => a + b, 0);
+          let oneriSum = oneriBases.reduce((a, b) => a + b, 0);
+          let spesaSum = spesaBases.reduce((a, b) => a + b, 0);
 
-          let prezzoEnergiaPercAgg = wavg(recs.map(r => Number(r.prezzoEnergiaPerc ?? 0)), consumiBases);
-          let consumiPercAgg       = wavg(recs.map(r => Number(r.consumiPerc ?? 0)),       consumiBases);
-          let oneriPercAgg         = wavg(recs.map(r => Number(r.oneriPerc ?? 0)),         oneriBases);
+          let prezzoEnergiaPercAgg = wavg(recs.map((r) => Number(r.prezzoEnergiaPerc ?? 0)), consumiBases);
+          let consumiPercAgg = wavg(recs.map((r) => Number(r.consumiPerc ?? 0)), consumiBases);
+          let oneriPercAgg = wavg(recs.map((r) => Number(r.oneriPerc ?? 0)), oneriBases);
 
           const lcCurrent = getLocalCache("ALL", year, mese);
 
           if (lcCurrent && usedAnyAnno) {
             prezzoEnergiaPercAgg = lcCurrent.prezzoEnergiaPerc ?? prezzoEnergiaPercAgg;
-            consumiPercAgg       = lcCurrent.consumiPerc       ?? consumiPercAgg;
-            oneriPercAgg         = lcCurrent.oneriPerc         ?? oneriPercAgg;
-            spesaSum             = lcCurrent.prezzoEnergiaBase ?? spesaSum;
-            consumiSum           = lcCurrent.consumiBase       ?? consumiSum;
-            oneriSum             = lcCurrent.oneriBase         ?? oneriSum;
+            consumiPercAgg = lcCurrent.consumiPerc ?? consumiPercAgg;
+            oneriPercAgg = lcCurrent.oneriPerc ?? oneriPercAgg;
+            spesaSum = lcCurrent.prezzoEnergiaBase ?? spesaSum;
+            consumiSum = lcCurrent.consumiBase ?? consumiSum;
+            oneriSum = lcCurrent.oneriBase ?? oneriSum;
           } else if (!usedAnyAnno && usedAnyPrev && monthsAllowed.has(mese)) {
             let accSpesa = 0;
-            let accCons  = 0;
+            let accCons = 0;
             let accOneri = 0;
 
             for (const r of recs) {
               const { nextConsumi, nextSpesa: spesaN, nextOneri: oneriN } = rollForwardBases(r);
               accSpesa += spesaN;
-              accCons  += nextConsumi;
+              accCons += nextConsumi;
               accOneri += oneriN;
             }
 
             prezzoEnergiaPercAgg = 0;
-            consumiPercAgg       = 0;
-            oneriPercAgg         = 0;
-            spesaSum             = accSpesa;
-            consumiSum           = accCons;
-            oneriSum             = accOneri;
+            consumiPercAgg = 0;
+            oneriPercAgg = 0;
+            spesaSum = accSpesa;
+            consumiSum = accCons;
+            oneriSum = accOneri;
           }
 
           const prezzoEnergia = consumiSum > 0 ? (spesaSum / consumiSum) * (1 + prezzoEnergiaPercAgg / 100) : 0;
-          const spesaTotale   = prezzoEnergia * (consumiSum * (1 + consumiPercAgg / 100)) + (oneriSum * (1 + oneriPercAgg / 100));
+          const spesaTotale =
+            prezzoEnergia * (consumiSum * (1 + consumiPercAgg / 100)) + oneriSum * (1 + oneriPercAgg / 100);
 
           return {
             mese: meseNome,
@@ -735,7 +800,7 @@ const BudgetPage: React.FC = () => {
           };
         });
 
-        const anyData = rowsAggregated.some(r => r.editable);
+        const anyData = rowsAggregated.some((r) => r.editable);
         setHasData(anyData);
         setRows(anyData ? rowsAggregated : emptyRows());
         return;
@@ -755,13 +820,9 @@ const BudgetPage: React.FC = () => {
 
       const mergedRows: MeseDati[] = MONTHS.map((meseNome, idx) => {
         const mese = idx + 1;
-        const recAnno = dataAnno.find((d: any) =>
-          d.mese === mese && Number(d.anno) === year
-        ) || null;
+        const recAnno = dataAnno.find((d: any) => d.mese === mese && Number(d.anno) === year) || null;
 
-        const recPrev = dataPrev.find((d: any) =>
-          d.mese === mese && Number(d.anno) === prevYear
-        ) || null;
+        const recPrev = dataPrev.find((d: any) => d.mese === mese && Number(d.anno) === prevYear) || null;
 
         if (recAnno) {
           return buildRowFromRecord(meseNome, recAnno);
@@ -783,7 +844,7 @@ const BudgetPage: React.FC = () => {
         }
       });
 
-      const anyRowHasData = mergedRows.some(r => r.editable);
+      const anyRowHasData = mergedRows.some((r) => r.editable);
       setHasData(anyRowHasData);
       setRows(anyRowHasData ? mergedRows : emptyRows());
     } catch {
@@ -795,12 +856,12 @@ const BudgetPage: React.FC = () => {
   /* ------------------------- INIT POD options ------------------------- */
   useEffect(() => {
     fetch(`${PATH}/pod`, { credentials: "include" })
-      .then(r => {
+      .then((r) => {
         if (!r.ok) throw new Error(r.status.toString());
         return r.json();
       })
       .then((pods: PodInfo[]) => {
-        const filtered = pods.filter(p => p.id.toUpperCase() !== "ALL");
+        const filtered = pods.filter((p) => p.id.toUpperCase() !== "ALL");
         setPodOptions([{ id: "ALL", sede: "Tutte le sedi" }, ...filtered]);
         setPod({ id: "ALL", sede: "Tutte le sedi" });
       })
@@ -815,7 +876,7 @@ const BudgetPage: React.FC = () => {
   /* --------------------------- Update row ----------------------------- */
   type UpdateRow = <K extends keyof MeseDati>(i: number, field: K, value: MeseDati[K]) => void;
   const updateRow: UpdateRow = useCallback((i, field, value) => {
-    setRows(rs => {
+    setRows((rs) => {
       const nr = [...rs];
       nr[i] = { ...nr[i], [field]: value };
       return nr;
@@ -823,36 +884,39 @@ const BudgetPage: React.FC = () => {
   }, []);
 
   /* ------------------------ Persistenza locale ------------------------ */
-  const handleLocalPersist = useCallback((monthIndex1Based: number, payload: LocalCacheMonth) => {
-    if (!pod) return;
+  const handleLocalPersist = useCallback(
+    (monthIndex1Based: number, payload: LocalCacheMonth) => {
+      if (!pod) return;
 
-    putLocalCache(pod.id, anno, monthIndex1Based, payload);
+      putLocalCache(pod.id, anno, monthIndex1Based, payload);
 
-    const r = rows[monthIndex1Based - 1];
-    if (r) {
-      const baseCons = Number(r.consumiBase ?? 0);
-      const baseSpesa = Number(r.prezzoEnergiaBase ?? 0);
-      const baseOneri = Number(r.oneriBase ?? 0);
-      const pCons = Number(r.consumiPerc ?? 0) / 100;
-      const pPrez = Number(r.prezzoEnergiaPerc ?? 0) / 100;
-      const pOneri = Number(r.oneriPerc ?? 0) / 100;
+      const r = rows[monthIndex1Based - 1];
+      if (r) {
+        const baseCons = Number(r.consumiBase ?? 0);
+        const baseSpesa = Number(r.prezzoEnergiaBase ?? 0);
+        const baseOneri = Number(r.oneriBase ?? 0);
+        const pCons = Number(r.consumiPerc ?? 0) / 100;
+        const pPrez = Number(r.prezzoEnergiaPerc ?? 0) / 100;
+        const pOneri = Number(r.oneriPerc ?? 0) / 100;
 
-      const nextConsumi = baseCons * (1 + pCons);
-      const unitPricePrev = baseCons > 0 ? (baseSpesa / baseCons) * (1 + pPrez) : 0;
-      const nextSpesa = unitPricePrev * nextConsumi;
-      const nextOneri = baseOneri * (1 + pOneri);
+        const nextConsumi = baseCons * (1 + pCons);
+        const unitPricePrev = baseCons > 0 ? (baseSpesa / baseCons) * (1 + pPrez) : 0;
+        const nextSpesa = unitPricePrev * nextConsumi;
+        const nextOneri = baseOneri * (1 + pOneri);
 
-      putLocalCache(pod.id, anno + 1, monthIndex1Based, {
-        prezzoEnergiaBase: nextSpesa,
-        consumiBase: nextConsumi,
-        oneriBase: nextOneri,
-        prezzoEnergiaPerc: 0,
-        consumiPerc: 0,
-        oneriPerc: 0,
-        ts: (payload.ts ?? Date.now()) + 1,
-      });
-    }
-  }, [pod, anno, rows, putLocalCache]);
+        putLocalCache(pod.id, anno + 1, monthIndex1Based, {
+          prezzoEnergiaBase: nextSpesa,
+          consumiBase: nextConsumi,
+          oneriBase: nextOneri,
+          prezzoEnergiaPerc: 0,
+          consumiPerc: 0,
+          oneriPerc: 0,
+          ts: (payload.ts ?? Date.now()) + 1,
+        });
+      }
+    },
+    [pod, anno, rows, putLocalCache]
+  );
 
   /* ------------------------- EXPORT EXCEL ----------------------------- */
   const handleExportExcel = async () => {
@@ -874,27 +938,86 @@ const BudgetPage: React.FC = () => {
   };
 
   /* ------------------------- REFRESH DATASET PBI ---------------------- */
-  const handleRefreshDataset = async () => {
+  const handleRefreshAll = async () => {
+  setIsRefreshing(true);
+  try {
+    // Chiamata diretta alla POST che calcola e pusha
+    const pushRes = await fetch(`${PATH}/proxy/budget/consolidato/push`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({}), // se non servono dati extra
+    });
+
+    if (!pushRes.ok) {
+      const t = await pushRes.text();
+      throw new Error(`POST /proxy/budget/consolidato/push: ${pushRes.status} ${t || pushRes.statusText}`);
+    }
+
+    // Refresh del report
+    await reportHandleRef.current?.refresh();
+
+    toast({
+      title: "Consolidato",
+      description: "Dati consolidati inviati a Power BI e report aggiornato.",
+    });
+  } catch (e: any) {
+    console.error("Errore push consolidato:", e);
+    toast({
+      variant: "destructive",
+      title: "Errore aggiornamento",
+      description: e?.message ?? "Impossibile inviare il consolidato.",
+    });
+  } finally {
+    setIsRefreshing(false);
+  }
+};
+
+
+  const currentYear = new Date().getFullYear();
+
+    /* ------------------------- CLEAR DATASET PBI ------------------------- */
+  const handleClearAll = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch(`${PATH}/api/pbi/refresh`, {
-        method: "POST",
+      // 1) chiama /proxy/bollette
+      const bolletteRes = await fetch(`${PATH}/proxy/bollette`, {
+        method: "GET",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Refresh fallito: ${res.status} ${text}`);
+      if (!bolletteRes.ok) {
+        const t = await bolletteRes.text();
+        throw new Error(`Errore svuotamento bollette: ${bolletteRes.status} ${t || bolletteRes.statusText}`);
       }
-      toast({ title: "Refresh avviato", description: "Il dataset Power BI è in aggiornamento." });
+
+      // chiama /proxy/budget
+      const budgetRes = await fetch(`${PATH}/proxy/budget`, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!budgetRes.ok) {
+        const t = await budgetRes.text();
+        throw new Error(`Errore svuotamento budget: ${budgetRes.status} ${t || budgetRes.statusText}`);
+      }
+
+      await reportHandleRef.current?.refresh();
+
+      toast({
+        title: "Dataset svuotato",
+        description: "Bollette e Budget resettati correttamente in Power BI.",
+      });
     } catch (e: any) {
-      toast({ title: "Errore refresh", description: e.message ?? "Errore sconosciuto", variant: "destructive" });
+      console.error("Errore clear dataset:", e);
+      toast({
+        variant: "destructive",
+        title: "Errore svuotamento",
+        description: e?.message ?? "Impossibile svuotare i dataset.",
+      });
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  const currentYear = new Date().getFullYear();
 
   /* ------------------------------ RENDER ------------------------------ */
 
@@ -902,36 +1025,92 @@ const BudgetPage: React.FC = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Budget Energia</h1>
-          <p className="text-lg text-gray-700">
-            Pianifica, monitora e ottimizza il budget energetico della tua azienda
-          </p>
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">Budget Energia</h1>
+          <p className="text-lg text-gray-700">Pianifica, monitora e ottimizza il budget energetico della tua azienda</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleRefreshDataset}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
-            title="Forza l'aggiornamento del dataset Power BI (ricarica dai proxy)"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            {isRefreshing ? "Aggiornamento..." : "Aggiorna dati"}
-          </Button>
-        </div>
+<div className="flex items-center gap-2">
+  <Button
+    variant="outline"
+    onClick={handleRefreshAll}
+    disabled={isRefreshing}
+    className="flex items-center gap-2"
+  >
+    <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+    {isRefreshing ? "Aggiornamento..." : "Aggiorna dati"}
+  </Button>
+
+  <Button
+    variant="destructive"
+    onClick={handleClearAll}
+    disabled={isRefreshing}
+    className="flex items-center gap-2"
+  >
+    <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+    {isRefreshing ? "Svuotamento..." : "Svuota dati"}
+  </Button>
+</div>
+
       </div>
 
       <SecondaryNavbar items={NAV_TABS} activeItemId={activeTab} onItemClick={setActiveTab} />
 
       {activeTab === "pbi" ? (
-        <Card className="mt-6">
-          <CardContent className="pt-4">
-            <PowerBIReportEmbed
-              reportId={energyportfolio.reports.budget.reportId}
-              pathBase={PATH}
-            />
-          </CardContent>
-        </Card>
+        <>
+          <div className="bg-white rounded-md shadow p-6 mb-6 border border-gray-200">
+            <div className="flex gap-6">
+              {/* Seleziona POD */}
+              <div className="flex-1">
+                <Label className="block text-sm font-medium mb-2">Seleziona POD</Label>
+                <Select
+                  value={pod?.id ?? ""}
+                  onValueChange={(v) => setPod(podOptions.find((p) => p.id === v) ?? null)}
+                  disabled={!podOptions.length}
+                >
+                  <SelectTrigger className="w-full h-10 bg-white">
+                    <SelectValue>{pod?.sede ?? pod?.id ?? "Seleziona POD"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {podOptions.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.sede ? `${o.sede} (${o.id})` : o.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Anno */}
+              <div className="flex-1">
+                <Label className="block text-sm font-medium mb-2">Anno</Label>
+                <Select value={String(anno)} onValueChange={(v) => setAnno(Number(v))}>
+                  <SelectTrigger className="w-full h-10 bg-white">
+                    <SelectValue>{anno}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {YEARS.filter((y) => y <= currentYear + 1).map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+          </div>
+
+          <Card className="mt-6">
+            <CardContent className="pt-4">
+              <PowerBIReportEmbed
+                reportId={energyportfolio.reports.budget.reportId}
+                pathBase={PATH}
+                ref={reportHandleRef}
+                pod={pod?.id ?? undefined}
+                anno={anno}
+              />
+            </CardContent>
+          </Card>
+        </>
       ) : (
         <>
           <div className="bg-white rounded-md shadow p-6 mb-6 border border-gray-200">
@@ -939,16 +1118,12 @@ const BudgetPage: React.FC = () => {
               {/* Seleziona POD */}
               <div className="flex-1 max-w-[420px] mb-7">
                 <Label className="block text-sm font-medium mb-1">Seleziona POD</Label>
-                <Select
-                  value={pod?.id ?? ""}
-                  onValueChange={v => setPod(podOptions.find(p => p.id === v) ?? null)}
-                  disabled={!podOptions.length}
-                >
+                <Select value={pod?.id ?? ""} onValueChange={(v) => setPod(podOptions.find((p) => p.id === v) ?? null)} disabled={!podOptions.length}>
                   <SelectTrigger className="bg-white">
                     <SelectValue>{pod?.sede ?? pod?.id ?? "Seleziona POD"}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {podOptions.map(o => (
+                    {podOptions.map((o) => (
                       <SelectItem key={o.id} value={o.id}>
                         {o.sede ? `${o.sede} (${o.id})` : o.id}
                       </SelectItem>
@@ -960,22 +1135,19 @@ const BudgetPage: React.FC = () => {
               {/* Anno */}
               <div className="flex flex-col flex-1 max-w-[420px] mb-2">
                 <Label className="block text-sm font-medium mb-1">Anno</Label>
-                <Select value={String(anno)} onValueChange={v => setAnno(Number(v))}>
+                <Select value={String(anno)} onValueChange={(v) => setAnno(Number(v))}>
                   <SelectTrigger className={hasData ? "bg-white" : "bg-white border-red-300"}>
                     <SelectValue>{anno}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {YEARS.filter(y => y <= currentYear + 1).map(y => (
+                    {YEARS.filter((y) => y <= currentYear + 1).map((y) => (
                       <SelectItem key={y} value={String(y)}>
                         {y}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p
-                  className="text-red-500 text-xs mt-1"
-                  style={{ visibility: hasData ? "hidden" : "visible", minHeight: "1rem" }}
-                >
+                <p className="text-red-500 text-xs mt-1" style={{ visibility: hasData ? "hidden" : "visible", minHeight: "1rem" }}>
                   Nessuna bolletta trovata
                 </p>
               </div>
@@ -1017,7 +1189,8 @@ const BudgetPage: React.FC = () => {
       <div className="mt-8">
         <NotesSection title="Note sul Controllo">
           <p className="text-sm text-gray-600">
-            Usa gli slider blu per impostare le variazioni percentuali rispetto ai dati base mensili.<br />
+            Usa gli slider blu per impostare le variazioni percentuali rispetto ai dati base mensili.
+            <br />
             La spesa totale viene ricalcolata in tempo reale e non è modificabile.
           </p>
         </NotesSection>

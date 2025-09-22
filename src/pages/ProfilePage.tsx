@@ -743,16 +743,13 @@ const ProfilePage = () => {
       </Tabs>
 
       {/* Footer fisso in bottom */}
-        <footer>
-          <div
-            className="mx-auto px-6"
-            style={{ maxWidth: "1200px", height: "auto" }}
-          >
+        <footer className="mt-auto bg-white border-t shadow-sm w-full fixed bottom-0 left-0 right-0">
+          <div className="mx-auto px-6 py-8 w-full" style={{ maxWidth: "1200px" }}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
               <div className="col-span-1 md:col-span-2">
                 <h4 className="text-lg font-semibold text-primary mb-4">Informazioni Legali</h4>
                 <p className="text-base text-muted-foreground mb-4">
-                  Mies - EnergyPortfolio è un servizio di gestione energetica aziendale fornito da{' '}
+                  Mies - EnergyPortfolio è un servizio di gestione energetica aziendale fornito da{" "}
                   Mies Energy Solutions S.p.A., P.IVA 12345678900, REA MI-1234567.
                 </p>
                 <p className="text-base text-muted-foreground">
@@ -760,28 +757,16 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              <div className="col-span-1">
+              <div>
                 <h4 className="text-lg font-semibold text-primary mb-4">Documenti Legali</h4>
                 <ul className="space-y-3 text-base">
-                  <li>
-                    <Link to="/privacy-policy" className="text-primary hover:underline">
-                      Privacy Policy
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/terms-conditions" className="text-primary hover:underline">
-                      Termini e Condizioni
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/cookie-policy" className="text-primary hover:underline">
-                      Cookie Policy
-                    </Link>
-                  </li>
+                  <li><Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link></li>
+                  <li><Link to="/terms-conditions" className="text-primary hover:underline">Termini e Condizioni</Link></li>
+                  <li><Link to="/cookie-policy" className="text-primary hover:underline">Cookie Policy</Link></li>
                 </ul>
               </div>
 
-              <div className="col-span-1">
+              <div>
                 <h4 className="text-lg font-semibold text-primary mb-4">GDPR e Privacy</h4>
                 <p className="text-base text-muted-foreground mb-4">
                   Responsabile Protezione Dati (DPO): <br />
@@ -802,16 +787,12 @@ const ProfilePage = () => {
                 © {currentYear} Mies Energy Solutions S.p.A. Tutti i diritti riservati.
               </p>
               <div className="flex gap-6 text-sm text-muted-foreground">
-                <Link to="/accessibility" className="hover:text-primary transition-colors">
-                  Accessibilità
-                </Link>
-                <Link to="/sitemap" className="hover:text-primary transition-colors">
-                  Mappa del sito
-                </Link>
+                <Link to="/accessibility" className="hover:text-primary transition-colors">Accessibilità</Link>
+                <Link to="/sitemap" className="hover:text-primary transition-colors">Mappa del sito</Link>
               </div>
             </div>
           </div>
-      </footer>
+        </footer>
     </div>
   );
 };

@@ -361,7 +361,7 @@ const CostiPage = () => {
       <Card className="mb-8">
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl">Gestione Costi</CardTitle>
+            <CardTitle className="text-2xl-blue-900">Gestione Costi</CardTitle>
             <div className="flex space-x-2">
               <Button 
                 onClick={() => setIsUploadDialogOpen(true)}

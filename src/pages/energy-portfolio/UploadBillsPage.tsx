@@ -1423,7 +1423,7 @@ const UploadBillsPage: React.FC = () => {
             <div className="container mx-auto px-4 py-8">
                 {/* Header identico a FuturesPage */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestione Bollette</h1>
+                    <h1 className="text-3xl font-bold text-blue-900 mb-2">Gestione Bollette</h1>
                     <p className="text-gray-600">Carica e gestisci le tue bollette energetiche</p>
                 </div>
 

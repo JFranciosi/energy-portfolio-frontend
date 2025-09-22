@@ -29,7 +29,7 @@ export const energyportfolio = {
       reportId: "24a05787-ca23-4a91-9ae6-ac5d25b237d9",
     },
     budget: {
-      reportId: "eaf84443-692d-4bd9-aba6-d911dcdfd83d",
+      reportId: "ceb76cd4-841b-45d7-bc66-17d700ab513a",
     },
   },
 };

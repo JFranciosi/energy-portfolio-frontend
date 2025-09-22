@@ -187,7 +187,7 @@ const UserManagement: React.FC = () => {
 
   return (
     <div className="container mx-auto max-w-7xl p-6">
-      <h1 className="text-3xl font-bold text-primary mb-2">Gestione Utenti</h1>
+      <h1 className="text-3xl font-bold text-blue-900 mb-2">Gestione Utenti</h1>
       <p className="mb-6 text-muted-foreground">
         Visualizza, filtra, modifica o elimina gli utenti dal sistema.
       </p>
