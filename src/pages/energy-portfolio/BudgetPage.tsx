@@ -20,7 +20,7 @@ const energyportfolio = {
   reports: {
     budget: {
       label: "Budget – Analisi/Previsioni",
-      reportId: "ceb76cd4-841b-45d7-bc66-17d700ab513a",
+      reportId: "7fa5925d-390c-4e9a-82ce-6847ea2b6114",
     },
   },
 };
@@ -940,14 +940,16 @@ const BudgetPage: React.FC = () => {
   /* ------------------------- REFRESH DATASET PBI ---------------------- */
   const handleRefreshAll = async () => {
   setIsRefreshing(true);
-  try {
-    // Chiamata diretta alla POST che calcola e pusha
-    const pushRes = await fetch(`${PATH}/proxy/budget/consolidato/push`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({}), // se non servono dati extra
-    });
+      try {
+          // Costruisci l'URL con i query parameters
+          const url = `${PATH}/proxy/budget/consolidato/push?year=${anno}&pod=${encodeURIComponent(pod?.id ?? '')}`;
+
+          const pushRes = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({})
+          });
 
     if (!pushRes.ok) {
       const t = await pushRes.text();
