@@ -126,6 +126,33 @@ const DashboardPage = () => {
     }
   }, []);
 
+    const handleProxyCalendario = useCallback(async () => {
+        try {
+            const fetchPromise = fetch(`${PATH}/proxy/calendario`, {
+                method: "GET",
+                credentials: "include",
+            });
+
+            const response = await promiseWithTimeout(
+                fetchPromise,
+                API_TIMEOUT,
+                "La richiesta al proxy bollette è scaduta (timeout)"
+            );
+
+            if (response.ok) {
+                console.log("Proxy bollette chiamato con successo");
+                return true;
+            } else {
+                console.log("Errore durante la chiamata al proxy bollette: " + response.status);
+                return false;
+            }
+        } catch (error) {
+            console.warn("Timeout o errore nel proxy bollette:", error.message);
+            // Non mostriamo l'errore all'utente, procediamo comunque
+            return false;
+        }
+    }, []);
+
   // Funzione di caricamento dati
   const fetchDataSequentially = useCallback(async () => {
     setIsLoading(true);
@@ -146,10 +173,14 @@ const DashboardPage = () => {
       const billetteSuccess = await handleProxyBollette();
       if (billetteSuccess) successCount++;
 
+        console.log("Fetching calendario data...");
+        const CalendarioSuccess = await handleProxyCalendario();
+        if (CalendarioSuccess) successCount++;
+
       // Procediamo anche se alcune API hanno fallito
       setDataLoaded(true);
 
-      if (successCount === 3) {
+      if (successCount === 4) {
         toast({
           title: "Dati caricati con successo",
           description: "Tutti i dati sono stati aggiornati",
@@ -252,7 +283,7 @@ const DashboardPage = () => {
             ) : (
                 <PowerBIReport
                     reportId={getReportIdForTab(activeTab)}
-                    className="w-full h-[500px]"
+                    className="w-full h-[800px]"
                 />
             )}
           </CardContent>
