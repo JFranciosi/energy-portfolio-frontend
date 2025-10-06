@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SecondaryNavbar } from '@/components/energy-portfolio/SecondaryNavbar';
+import ExportBollette from './ExportBollette';
 import { NotesSection } from '@/components/energy-portfolio/NotesSection';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -1072,9 +1073,10 @@ const UploadBillsPage: React.FC = () => {
 
     // Configurazione corretta per SecondaryNavbar
     const navItems = [
-        { id: 'bills', label: 'Bollette' },
-        { id: 'pods', label: 'Dati POD' },
-        { id: 'costs', label: 'Gestione Costi' },
+    { id: 'bills', label: 'Bollette' },
+    { id: 'pods', label: 'Dati POD' },
+    { id: 'costs', label: 'Gestione Costi' },
+    { id: 'export', label: 'Esporta Excel' }, // nuovo
     ];
 
     useEffect(() => {
@@ -1453,6 +1455,13 @@ const UploadBillsPage: React.FC = () => {
                 return (
                     <div className="space-y-6">
                         <CostiForm />
+                    </div>
+                );
+
+            case 'export':
+                return (
+                    <div className="space-y-6">
+                    <ExportBollette data={data} pod={pod} />
                     </div>
                 );
 
