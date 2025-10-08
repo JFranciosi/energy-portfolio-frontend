@@ -13,7 +13,7 @@ export const energyportfolio = {
       reportId: "731f022b-0cd0-4a27-8c0b-1291fa56aabf",
     },
     controllo: {
-      reportId: "dbd53ac9-a515-4e62-8d0f-093f85de5b8b",
+      reportId: "4c69669d-05a0-4c5e-8ef5-210b6c771af0",
     },
     past: {
       reportId: "f9f7a1d8-32e8-4b04-9cb8-9f83c0e25858",
