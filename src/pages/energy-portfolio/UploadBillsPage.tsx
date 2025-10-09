@@ -687,228 +687,227 @@ const CostiForm: React.FC = () => {
     };
 
 
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Gestione Costi Energetici</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-4">
-                    {/* Menu principale: tipo prezzi, anno e tipo tariffa allineati */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label>Tipo di Prezzo</Label>
-                            <Select
-                                value={tipoPrezzi}
-                                onValueChange={(value) => setTipoPrezzi(value as TipoPrezzi)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleziona tipo prezzo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="fisso">100% Fisso</SelectItem>
-                                    <SelectItem value="indicizzato">100% Indicizzato</SelectItem>
-                                    <SelectItem value="misto">Prezzo Misto</SelectItem>
-                                    <SelectItem value="dinamico">Prezzo Dinamico</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Anno</Label>
-                            <Select
-                                value={annoSelezionato.toString()}
-                                onValueChange={(value) => setAnnoSelezionato(parseInt(value))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleziona anno" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {anniDisponibili.map(anno => (
-                                        <SelectItem key={anno} value={anno.toString()}>{anno}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Menu secondario per tipo tariffa (solo per prezzo fisso) */}
-                        {tipoPrezzi === 'fisso' && (
-                            <div className="space-y-2">
-                                <Label>Tipo Tariffa</Label>
-                                <Select
-                                    value={tipoTariffa}
-                                    onValueChange={(value) => setTipoTariffa(value as TipoTariffa)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleziona tipo tariffa" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="monoraria">Monoraria</SelectItem>
-                                        <SelectItem value="bioraria">Bioraria</SelectItem>
-                                        <SelectItem value="trioraria">Trioraria</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
+    // @ts-ignore
+    let card = <><Card>
+        <CardHeader>
+            <CardTitle>Gestione Costi Energetici</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="space-y-4">
+                {/* Menu principale: tipo prezzi, anno e tipo tariffa allineati */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label>Tipo di Prezzo</Label>
+                        <Select
+                            value={tipoPrezzi}
+                            onValueChange={(value) => setTipoPrezzi(value as TipoPrezzi)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Seleziona tipo prezzo"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="fisso">100% Fisso</SelectItem>
+                                <SelectItem value="indicizzato">100% Indicizzato</SelectItem>
+                                <SelectItem value="misto">Prezzo Misto</SelectItem>
+                                <SelectItem value="dinamico">Prezzo Dinamico</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* Campo percentuale per prezzo misto e dinamico */}
-                    {(tipoPrezzi === 'misto') && (
+                    <div className="space-y-2">
+                        <Label>Anno</Label>
+                        <Select
+                            value={annoSelezionato.toString()}
+                            onValueChange={(value) => setAnnoSelezionato(parseInt(value))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Seleziona anno"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {anniDisponibili.map(anno => (
+                                    <SelectItem key={anno} value={anno.toString()}>{anno}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Menu secondario per tipo tariffa (solo per prezzo fisso) */}
+                    {tipoPrezzi === 'fisso' && (
                         <div className="space-y-2">
-                            <Label htmlFor="percentuale">Percentuale Variabile (%)</Label>
-                            <div className="flex items-center space-x-2">
-                                <Input
-                                    id="percentuale"
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    {...formDinamici.register('percentualeVariabile')}
-                                    className="w-24"
-                                />
-                                <span>%</span>
-                                <span className="text-sm text-gray-600">
-                  variabile, resto fisso ({100 - (formDinamici.watch('percentualeVariabile') || 0)}%)
-                </span>
-                            </div>
+                            <Label>Tipo Tariffa</Label>
+                            <Select
+                                value={tipoTariffa}
+                                onValueChange={(value) => setTipoTariffa(value as TipoTariffa)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleziona tipo tariffa"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="monoraria">Monoraria</SelectItem>
+                                    <SelectItem value="bioraria">Bioraria</SelectItem>
+                                    <SelectItem value="trioraria">Trioraria</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     )}
                 </div>
 
-                {/* Rendering dei campi in base al tipo di prezzo */}
-                {tipoPrezzi !== 'dinamico' ? (
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {renderCampiCosti(form.getValues())}
-                            </div>
-                            <Button type="submit" disabled={loading} className="w-full">
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Salvataggio in corso...
-                                    </>
-                                ) : (
-                                    'Salva Costi'
-                                )}
-                            </Button>
-                        </form>
-                    </Form>
-                ) : (
-                    /* Gestione prezzi dinamici con periodi multipli */
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-medium">Periodi di Prezzo</h3>
-                            <Button
-                                onClick={aggiungiPeriodo}
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center gap-2"
-                            >
-                                <Plus size={16} />
-                                Aggiungi Periodo
-                            </Button>
+                {/* Campo percentuale per prezzo misto e dinamico */}
+                {(tipoPrezzi === 'misto') && (
+                    <div className="space-y-2">
+                        <Label htmlFor="percentuale">Percentuale Variabile (%)</Label>
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                id="percentuale"
+                                type="number"
+                                min="0"
+                                max="100"
+                                {...formDinamici.register('percentualeVariabile')}
+                                className="w-24"
+                            />
+                            <span>%</span>
+                            <span className="text-sm text-gray-600">
+                  variabile, resto fisso ({100 - (formDinamici.watch('percentualeVariabile') || 0)}%)
+                </span>
                         </div>
+                    </div>
+                )}
+            </div>
 
-                        {costiDinamici.periodi.map((periodo, index) => (
-                            <Card key={periodo.id}>
-                                <CardHeader>
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle className="text-base">
-                                            Periodo {index + 1} - Anno {annoSelezionato}
-                                        </CardTitle>
-                                        {costiDinamici.periodi.length > 1 && (
-                                            <Button
-                                                onClick={() => rimuoviPeriodo(periodo.id, periodo)}
-                                                variant="outline"
-                                                size="sm"
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                <Trash2 size={16} />
-                                                Rimuovi
-                                            </Button>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {/* Mese Inizio */}
-                                        <div className="space-y-2">
-                                            <Label>Mese di Inizio</Label>
-                                            <Select
-                                                value={periodo.meseInizio.toString()}
-                                                onValueChange={(value) =>
-                                                    aggiornaMeseInizio(periodo.id, parseInt(value))
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(mese => (
-                                                        <SelectItem key={mese} value={mese.toString()}>
-                                                            Mese {mese}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label>Percentuale Variabile (%)</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                max={100}
-                                                step={0.01}
-                                                value={periodo.percentualeVariabile} // ← Valore specifico del periodo
-                                                onChange={(e) => {
-                                                    const value = parseFloat(e.target.value) || 0;
-                                                    aggiornaPercentualeVariabile(periodo.id, value); // ← Aggiorna solo questo periodo
-                                                }}
-                                                placeholder="Es: 60"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Campi Costi */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {renderCampiCosti(
-                                            periodo.costiData,
-                                            `periodo-${periodo.id}-`,
-                                            false,
-                                            (campo, valore) => aggiornaPeriodo(periodo.id, campo, valore)
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-
-                        <Button
-                            onClick={salvaCostiDinamici}
-                            disabled={loading}
-                            className="w-full"
-                        >
+            {/* Rendering dei campi in base al tipo di prezzo */}
+            {tipoPrezzi !== 'dinamico' ? (
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {renderCampiCosti(form.getValues())}
+                        </div>
+                        <Button type="submit" disabled={loading} className="w-full">
                             {loading ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                                     Salvataggio in corso...
                                 </>
                             ) : (
-                                'Salva Costi Dinamici'
+                                'Salva Costi'
                             )}
                         </Button>
+                    </form>
+                </Form>
+            ) : (
+                /* Gestione prezzi dinamici con periodi multipli */
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Periodi di Prezzo</h3>
+                        <Button
+                            onClick={aggiungiPeriodo}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2"
+                        >
+                            <Plus size={16}/>
+                            Aggiungi Periodo
+                        </Button>
                     </div>
-                )}
 
-                {loading && (
-                    <div className="text-center text-sm text-gray-500">
-                        Comunicazione con il server in corso...
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
+                    {costiDinamici.periodi.map((periodo, index) => (
+                        <Card key={periodo.id}>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-base">
+                                        Periodo {index + 1} - Anno {annoSelezionato}
+                                    </CardTitle>
+                                    {costiDinamici.periodi.length > 1 && (
+                                        <Button
+                                            onClick={() => rimuoviPeriodo(periodo.id, periodo)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-red-600 hover:text-red-800"
+                                        >
+                                            <Trash2 size={16}/>
+                                            Rimuovi
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Mese Inizio */}
+                                    <div className="space-y-2">
+                                        <Label>Mese di Inizio</Label>
+                                        <Select
+                                            value={periodo.meseInizio.toString()}
+                                            onValueChange={(value) =>
+                                                aggiornaMeseInizio(periodo.id, parseInt(value))
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue/>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Array.from({length: 12}, (_, i) => i + 1).map(mese => (
+                                                    <SelectItem key={mese} value={mese.toString()}>
+                                                        Mese {mese}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Percentuale Variabile (%)</Label>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            step={0.01}
+                                            value={periodo.percentualeVariabile} // ← Valore specifico del periodo
+                                            onChange={(e) => {
+                                                const value = parseFloat(e.target.value) || 0;
+                                                aggiornaPercentualeVariabile(periodo.id, value); // ← Aggiorna solo questo periodo
+                                            }}
+                                            placeholder="Es: 60"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Campi Costi */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {renderCampiCosti(
+                                        periodo.costiData,
+                                        `periodo-${periodo.id}-`,
+                                        false,
+                                        (campo, valore) => aggiornaPeriodo(periodo.id, campo, valore)
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    <Button
+                        onClick={salvaCostiDinamici}
+                        disabled={loading}
+                        className="w-full"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                Salvataggio in corso...
+                            </>
+                        ) : (
+                            'Salva Costi Dinamici'
+                        )}
+                    </Button>
+                </div>
+            )}
+
+            {loading && (
+                <div className="text-center text-sm text-gray-500">
+                    Comunicazione con il server in corso...
+                </div>
+            )}
+        </CardContent>
+    </Card></>;
+    return card;
 };
 
 // CARICAMENTO MULTIPLO FILE
@@ -1047,12 +1046,6 @@ const FileUploadSection: React.FC<{
                             </Button>
                         </div>
                     )}
-
-                    <p className="text-sm text-gray-600">
-                        {filesUploaded >= 12 ?
-                            'Hai raggiunto il limite di 12 bollette.' :
-                            selectedFiles.length === 0 ? 'Non hai ancora selezionato nessun file.' : ''}
-                    </p>
                 </div>
             </CardContent>
         </Card>
