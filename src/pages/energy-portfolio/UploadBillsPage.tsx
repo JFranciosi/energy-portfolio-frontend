@@ -1055,7 +1055,8 @@ const FileUploadSection: React.FC<{
 
 // --- MAIN PAGE ---
 const UploadBillsPage: React.FC = () => {
-    const PATH_DEV = 'http://localhost:8081';
+    //const PATH_DEV = 'http://localhost:8081';
+    const PATH_DEV = 'https://energyportfolio.it';
     const [data, setData] = useState<BillFile[]>([]);
     const [pod, setPod] = useState<Pod[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
