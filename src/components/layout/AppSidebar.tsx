@@ -19,7 +19,10 @@ import {useIsMobile} from '@/hooks/use-mobile';
 import {Button} from '@/components/ui/button';
 
 export const AppSidebar = () => {
-    const PATH_DEV = "http://localhost:8081";
+
+    //const PATH_DEV = "http://localhost:8081";
+    const PATH_DEV = "https://energyportfolio.it";
+
     const [accessoEffettuato, setAccessoEffettuato] = useState(false);
     const [error, setError] = useState('');
     const [categoriaUtente, setCategoriaUtente] = useState('');

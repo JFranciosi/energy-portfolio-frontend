@@ -51,7 +51,9 @@ const PowerBIReport: React.FC<PowerBIReportProps> = ({ reportId, className }) =>
   const powerbiService = useRef<PowerBIService | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const PATH = "http://localhost:8081"; 
+  //const PATH = "http://localhost:8081";
+    const PATH = "https://energyportfolio.it";
+
 
   const toggleFullscreen = () => {
     if (!reportRef.current) return;
