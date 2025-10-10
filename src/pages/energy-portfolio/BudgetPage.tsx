@@ -950,7 +950,7 @@ const BudgetPage: React.FC = () => {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
-              body: JSON.stringify({})
+              //body: JSON.stringify({})
           });
 
     if (!pushRes.ok) {
