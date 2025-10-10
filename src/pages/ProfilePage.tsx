@@ -232,7 +232,9 @@ const EditableSwitch: React.FC<EditableSwitchProps> = ({
 };
 
 const ProfilePage = () => {
-  const PATH_DEV = "http://localhost:8081";
+  //const PATH_DEV = "http://localhost:8081";
+    const PATH_DEV = 'https://energyportfolio.it';
+
   const [userData, setUserData] = useState<UserData>(fallbackUserData);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);

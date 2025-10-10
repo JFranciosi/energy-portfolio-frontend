@@ -153,7 +153,8 @@ const PRESETS_DEFAULT: Record<string, ExportFieldKey[]> = {
 };
 
 /* --------- ENDPOINT --------- */
-const PATH_DEV = 'http://localhost:8081';
+//const PATH_DEV = 'http://localhost:8081';
+const PATH_DEV = 'https://energyportfolio.it';
 const API_PREVIEW = `${PATH_DEV}/api/export/preview`;
 const API_EXPORT = `${PATH_DEV}/api/export/excel`;
 

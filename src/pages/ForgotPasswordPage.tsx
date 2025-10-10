@@ -12,7 +12,9 @@ const ForgotPasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const PATH = 'http://localhost:8081';
+  //const PATH = 'http://localhost:8081';
+    const PATH = 'https://energyportfolio.it';
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

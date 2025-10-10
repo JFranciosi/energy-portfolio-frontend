@@ -17,6 +17,8 @@ const ResetPasswordPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+    const PATH_DEV = 'https://energyportfolio.it';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -28,7 +30,7 @@ const ResetPasswordPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8081/Autentication/reset-password", {
+      const res = await fetch(`${PATH_DEV}/Autentication/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

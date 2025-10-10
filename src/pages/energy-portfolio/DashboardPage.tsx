@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 
 // Define the path for API calls
-const PATH = "http://localhost:8081"; // Adjust based on your actual API path
+//const PATH = "http://localhost:8081"; // Adjust based on your actual API path
+const PATH = 'https://energyportfolio.it';
+
 
 // Timeout in milliseconds (10 seconds)
 const API_TIMEOUT = 10000;

@@ -47,7 +47,9 @@ interface PaginatedResponse {
 }
 
 const DettaglioCostoPage = () => {
-  const PATH_DEV = "http://localhost:8081";
+  //const PATH_DEV = "http://localhost:8081";
+  const PATH_DEV = 'https://energyportfolio.it';
+
   const isMobile = useIsMobile();
 
   // Stato per i dati e la paginazione

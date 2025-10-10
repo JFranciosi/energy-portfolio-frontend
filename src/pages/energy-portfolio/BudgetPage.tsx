@@ -47,7 +47,7 @@ interface PowerBIReportProps {
 }
 
 const PowerBIReportEmbed = React.forwardRef<PowerBIReportHandle, PowerBIReportProps>(
-  ({ reportId, className, pathBase = "http://localhost:8081", pod, anno }, ref) => {
+  ({ reportId, className, pathBase = "https://energyportfolio.it", pod, anno }, ref) => {
     const reportRef = useRef<HTMLDivElement>(null);
     const powerbiService = useRef<PowerBIService | null>(null);
     const reportObjRef = useRef<PowerBIReport | null>(null);
@@ -327,7 +327,9 @@ type LocalCache = {
   };
 };
 
-const PATH = "http://localhost:8081";
+//const PATH = "http://localhost:8081";
+const PATH = 'https://energyportfolio.it';
+
 const YEARS = Array.from({ length: 8 }, (_, i) => 2023 + i);
 const MONTHS = [
   "Gennaio",

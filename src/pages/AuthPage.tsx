@@ -17,7 +17,9 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
 
-  const PATH = 'http://localhost:8081';
+  //const PATH = 'http://localhost:8081';
+    const PATH = 'https://energyportfolio.it';
+
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('email');

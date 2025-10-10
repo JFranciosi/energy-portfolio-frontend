@@ -8,7 +8,9 @@ import PowerBIReport, { energyportfolio } from '@/components/energy-portfolio/Po
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 
 const FuturesPage = () => {
-  const PATH = "http://localhost:8081"; // Percorso base per le API
+  //const PATH = "http://localhost:8081"; // Percorso base per le API
+    const PATH = 'https://energyportfolio.it';
+
 
   const [activeTab, setActiveTab] = useState('futures');
   const [confidenceLevel, setConfidenceLevel] = useState([80]);

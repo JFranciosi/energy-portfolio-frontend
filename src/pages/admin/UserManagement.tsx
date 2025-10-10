@@ -49,7 +49,8 @@ interface Cliente {
   nome?: string; // campo temporaneo per modificare username
 }
 
-const PATH_DEV = "http://localhost:8081";
+//const PATH_DEV = "http://localhost:8081";
+const PATH_DEV = 'https://energyportfolio.it';
 
 const UserManagement: React.FC = () => {
   const [userRole] = useState<string>("Admin");

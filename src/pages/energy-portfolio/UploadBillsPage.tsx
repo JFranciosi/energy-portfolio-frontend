@@ -188,7 +188,8 @@ const costiDinamiciSchema = z.object({
 
 // FORM COSTI MODIFICATO
 const CostiForm: React.FC = () => {
-    const PATH_DEV = 'http://localhost:8081';
+    //const PATH_DEV = 'http://localhost:8081';
+    const PATH_DEV = 'https://energyportfolio.it';
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
 

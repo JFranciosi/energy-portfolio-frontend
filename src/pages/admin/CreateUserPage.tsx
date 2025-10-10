@@ -46,7 +46,9 @@ const getPasswordStrength = (password: string) => {
   return { strength: "strong", score };
 };
 
-const PATH_DEV = "http://localhost:8081";
+//const PATH_DEV = "http://localhost:8081";
+const PATH_DEV = 'https://energyportfolio.it';
+
 
 const CreateUserPage = () => {
   const navigate = useNavigate();
