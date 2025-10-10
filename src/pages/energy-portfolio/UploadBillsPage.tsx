@@ -916,7 +916,8 @@ const FileUploadSection: React.FC<{
     onFileUploadSuccess: () => void;
     filesUploaded: number;
 }> = ({ onFileUploadSuccess, filesUploaded }) => {
-    const PATH_DEV = 'http://localhost:8081';
+    //const PATH_DEV = 'http://localhost:8081';
+    const PATH_DEV = 'https://energyportfolio.it';
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
